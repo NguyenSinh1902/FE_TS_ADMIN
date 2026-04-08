@@ -54,10 +54,10 @@ export default StyleSheet.create({
     idText: { fontSize: 13, fontWeight: '800', color: '#94A3B8' },
     idValue: { fontSize: 15, fontWeight: '900', color: '#1E2939', marginLeft: 4 },
     timeText: { fontSize: 12, color: '#94A3B8', marginLeft: 8, fontWeight: '600' },
-    
+
     cardMiddle: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, marginBottom: 10 },
     typeIconWrapper: {
-        width: 38, height: 38, borderRadius: 12, 
+        width: 38, height: 38, borderRadius: 12,
         backgroundColor: '#F8FAFC', justifyContent: 'center', alignItems: 'center',
         borderWidth: 1, borderColor: '#F1F5F9'
     },
@@ -71,7 +71,7 @@ export default StyleSheet.create({
     },
 
     cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    paymentInfo: { 
+    paymentInfo: {
         flexDirection: 'row', alignItems: 'center',
         backgroundColor: '#F8FAFC', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10
     },
@@ -83,21 +83,21 @@ export default StyleSheet.create({
     statusTagText: { fontSize: 11, fontWeight: '900', textTransform: 'uppercase' },
 
     /* Detail Modal Styles */
-    modalOverlay: { 
+    modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.6)', 
+        backgroundColor: 'rgba(0,0,0,0.6)',
         justifyContent: 'flex-end'
     },
-    modalContent: { 
-        backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, 
-        padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24, 
+    modalContent: {
+        backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32,
+        padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24,
         maxHeight: '85%', width: '100%',
         elevation: 20, zIndex: 1000
     },
     modalHandle: { width: 45, height: 6, backgroundColor: '#E2E8F0', borderRadius: 3, alignSelf: 'center', marginBottom: 20 },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
     modalTitle: { fontSize: 22, fontWeight: '900', color: '#1E2939' },
-    
+
     billPaper: { backgroundColor: '#F9FAFB', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#F1F5F9' },
     billHeader: { borderBottomWidth: 1, borderBottomColor: '#E2E8F0', paddingBottom: 15, marginBottom: 15 },
     billInfoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
