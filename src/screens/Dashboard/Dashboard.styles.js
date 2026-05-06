@@ -4,6 +4,13 @@ export default StyleSheet.create({
   mainContainer: {
     flex: 1,
   },
+  absoluteFill: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  frostyOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
   gradientBg: {
     flex: 1,
   },
@@ -18,22 +25,23 @@ export default StyleSheet.create({
   
   // -- Stat Card --
   statCard: {
-    backgroundColor: '#FFFFFF', // Dùng màu trắng đặc để thẻ tách rạch ròi khỏi nền
-    borderRadius: 24,
+    flex: 1, // Add this to make them equal height
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#FFFFFF',
+    borderColor: 'rgba(255, 255, 255, 0.5)',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    shadowColor: "#8BA367", // Bóng Shadow ám màu xanh lá mạ của app cho sang trọng
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 15,
-    elevation: 5, // Có thể an toàn bật lại elevation vì nền thẻ đã là màu đặc (solid)
-    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    marginBottom: 16, // Default for mobile
   },
   statContent: {
     flex: 1,
+    justifyContent: 'space-between', // Push content apart evenly
   },
   statLabel: {
     color: '#4A5565',
@@ -79,49 +87,53 @@ export default StyleSheet.create({
   },
   
   // -- AI Button --
-  aiButtonWrap: {
-    borderRadius: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 5,
-    marginBottom: 16,
+  aiWideButtonWrap: {
+    marginTop: 12,
+    borderRadius: 16,
+    shadowColor: "#8BA367",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
+    elevation: 4,
+    overflow: 'hidden',
   },
-  aiButtonGradient: {
-    height: 76,
+  aiWideButtonGradient: {
+    paddingVertical: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 24,
+    borderRadius: 16,
   },
-  aiText: {
+  aiWideButtonText: {
     color: 'white',
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    marginLeft: 12,
+    marginLeft: 10,
+    letterSpacing: 0.5,
   },
 
   // -- Chart Card --
   chartCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#FFFFFF',
-    shadowColor: "#8BA367",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 15,
-    elevation: 5,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
     marginBottom: 20,
   },
   chartHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
+  },
+  chartHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   chartTitle: {
     color: '#101828',
@@ -140,7 +152,7 @@ export default StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     marginHorizontal: 4,
   },
   segmentButtonActive: {
@@ -217,14 +229,15 @@ export default StyleSheet.create({
   },
   modalCard: {
     width: '100%',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 32,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 15 },
     shadowOpacity: 0.3,
     shadowRadius: 30,
-    elevation: 10,
   },
   modalHeader: {
     padding: 24,
@@ -263,18 +276,13 @@ export default StyleSheet.create({
     paddingTop: 16,
   },
   insightCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: 24,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.03)',
+    borderColor: 'rgba(255, 255, 255, 0.5)',
     marginBottom: 16,
   },
   insightIconWrap: {
@@ -307,5 +315,96 @@ export default StyleSheet.create({
   modalFooterText: {
     color: '#6A7282',
     fontSize: 12,
+  },
+
+  // -- Tablet Specific Styles --
+  tabletContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: 'transparent',
+  },
+  tabletMain: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  decorativeBlob1: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: '#8BA367',
+    opacity: 0.15,
+    top: -50,
+    right: -50,
+  },
+  decorativeBlob2: {
+    position: 'absolute',
+    width: 400,
+    height: 400,
+    borderRadius: 200,
+    backgroundColor: '#FCD34D',
+    opacity: 0.08,
+    bottom: -100,
+    left: '20%',
+  },
+  tabletContent: {
+    paddingHorizontal: 32,
+    paddingBottom: 32,
+  },
+  tabletHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 32,
+    paddingTop: 32,
+  },
+  tabletHeaderTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#101828',
+  },
+  tabletStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -12,
+  },
+  tabletStatCardWrap: {
+    width: '33.33%',
+    paddingHorizontal: 12,
+    marginBottom: 24, // Consistent 24px vertical gap
+  },
+  tabletChartRow: {
+    flexDirection: 'row',
+    marginHorizontal: -12,
+  },
+  tabletChartCol: {
+    flex: 2.2,
+    paddingHorizontal: 12,
+  },
+  tabletSideCols: {
+    flex: 1.8,
+    paddingHorizontal: 12,
+    gap: 20,
+  },
+  aiFabButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#8BA367',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  tabletAIDesc: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 20,
   }
 });
+

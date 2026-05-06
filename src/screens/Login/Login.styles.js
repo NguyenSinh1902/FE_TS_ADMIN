@@ -1,140 +1,145 @@
 import { StyleSheet, Dimensions } from 'react-native';
 
+const { width, height } = Dimensions.get('window');
+
 export default StyleSheet.create({
-  mainContainer: {
+  // Login Card
+  loginCard: {
+    width: '85%',
+    maxWidth: 450,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderRadius: 28,
+    padding: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 15 },
+    shadowOpacity: 0.1,
+    shadowRadius: 30,
+  },
+  loginHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 30,
+    width: '100%',
+  },
+  backBtn: {
+    padding: 8,
+    marginRight: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  loginTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1B2A15',
     flex: 1,
-  },
-  gradientBg: {
-    flex: 1,
-  },
-  contentContainer: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 80,
-    paddingBottom: 40,
-  },
-  headerSection: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  shieldIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 1.5,
-    borderColor: 'rgba(212, 175, 55, 0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    // Add golden glow background
-    backgroundColor: 'rgba(212, 175, 55, 0.15)',
-  },
-  titleText: {
-    fontFamily: 'serif',
-    fontSize: 32,
-    fontWeight: '500',
-    color: '#FFF8E7',
-    marginBottom: 6,
-  },
-  subtitleText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#D4AF37',
+    textAlign: 'center',
+    marginRight: 40,
     letterSpacing: 1.5,
   },
-  card: {
-    width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 40,
-  },
+  
+  // Inputs
   inputGroup: {
     marginBottom: 20,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#FFF8E7',
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1B2A15',
     marginBottom: 8,
+    marginLeft: 4,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 16,
-    height: 52,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 15,
+    height: 56,
     paddingHorizontal: 16,
   },
+  inputWrapperFocused: {
+    borderColor: '#4A5D23',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 2,
+  },
   inputIcon: {
-    marginRight: 10,
+    marginRight: 12,
   },
   input: {
     flex: 1,
-    color: '#FFFFFF',
+    color: '#1B2A15',
     fontSize: 16,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: 24,
-    marginTop: -4,
-  },
-  forgotPasswordText: {
-    color: '#D4AF37', // Vàng gold
-    fontSize: 14,
     fontWeight: '500',
+    height: '100%',
   },
+
+  // Button
   loginBtnWrap: {
-    width: '100%',
+    marginTop: 10,
     borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'rgba(212, 175, 55, 0.6)', // Border màu gold rực
   },
   loginBtn: {
     height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loginBtnText: {
-    color: '#FFFFFF',
+    color: '#FFF',
     fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    fontWeight: '700',
+    letterSpacing: 1.2,
   },
-  contactText: {
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 20,
+  loginBtnGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#8BA367',
+    borderRadius: 16,
+    opacity: 0.3,
+    shadowColor: '#8BA367',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.6,
+    shadowRadius: 15,
+    zIndex: -1,
   },
-  securityBadge: {
+
+  // Footer
+  forgotBtn: {
+    marginTop: 15,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  forgotText: {
+    color: '#1B2A15',
+    fontSize: 14,
+    fontWeight: '500',
+    textDecorationLine: 'underline',
+    opacity: 0.8,
+  },
+  footerContainer: {
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.2)',
+    paddingTop: 20,
+  },
+  footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.2)',
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  badgeText: {
-    color: '#D4AF37',
-    fontSize: 12,
-    letterSpacing: 0.5,
-    marginLeft: 8,
   },
   footerText: {
-    color: 'rgba(255, 255, 255, 0.4)',
-    fontSize: 12,
-    textAlign: 'center',
-  }
+    color: '#4A5D23',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  errorText: {
+    color: '#E53E3E',
+    fontSize: 13,
+    fontWeight: '500',
+    marginTop: 6,
+    marginLeft: 4,
+  },
 });

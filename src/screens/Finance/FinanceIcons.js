@@ -65,3 +65,87 @@ export const CloseIcon = () => (
         <Path d="M18 6L6 18M6 6l12 12" stroke="#64748B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
 );
+
+export const DownloadIcon = ({ color = "#64748B" }) => (
+    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <Path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15M7 10L12 15L17 10M12 15V3" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);
+
+export const ChartBarIcon = ({ color = "#64748B" }) => (
+    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <Path d="M18 20V10M12 20V4M6 20V14" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);
+
+export const ChartPieIcon = ({ color = "#64748B" }) => (
+    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <Path d="M21.21 15.89A10 10 0 118 2.83M22 12A10 10 0 0012 2V12H22Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);
+
+export const CheckCircleIcon = ({ color = "#64748B" }) => (
+    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <Path d="M22 11.08V12A10 10 0 1117.17 4.05M22 4L12 14.01L9 11.01" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);
+
+export const TeaLeafIcon = ({ size = 100, color = "#8BA367", opacity = 0.1 }) => (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path d="M2 22C2 22 10 20 16 14C22 8 22 2 22 2C22 2 16 2 10 8C4 14 2 22 2 22Z" stroke={color} strokeWidth="1" strokeOpacity={opacity} fill="none" />
+        <Path d="M2 22L22 2" stroke={color} strokeWidth="0.5" strokeOpacity={opacity} />
+        <Path d="M9 15C9 15 11 14 13 12" stroke={color} strokeWidth="0.5" strokeOpacity={opacity} />
+    </Svg>
+);
+
+export const MatchaCupIcon = ({ size = 100, color = "#8BA367", opacity = 0.1 }) => (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path d="M5 8H19L18 19C18 20.1 17.1 21 16 21H8C6.9 21 6 20.1 6 19L5 8Z" stroke={color} strokeWidth="1" strokeOpacity={opacity} />
+        <Path d="M5 8C5 5.2 7.2 3 10 3H14C16.8 3 19 5.2 19 8" stroke={color} strokeWidth="1" strokeOpacity={opacity} />
+        <Path d="M9 11L15 11" stroke={color} strokeWidth="1" strokeOpacity={opacity} />
+    </Svg>
+);
+
+export const PearlIcon = ({ size = 40, color = "#8BA367", opacity = 0.1 }) => (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Circle cx="12" cy="12" r="8" stroke={color} strokeWidth="1" strokeOpacity={opacity} />
+        <Circle cx="10" cy="10" r="2" fill={color} fillOpacity={opacity} />
+    </Svg>
+);
+
+export const TeapotIcon = ({ size = 120, color = "#8BA367", opacity = 0.1 }) => (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path d="M4 12C4 8.7 6.7 6 10 6H14C17.3 6 20 8.7 20 12V14C20 17.3 17.3 20 14 20H10C6.7 20 4 17.3 4 14V12Z" stroke={color} strokeWidth="1" strokeOpacity={opacity} />
+        <Path d="M20 10H22V14H20" stroke={color} strokeWidth="1" strokeOpacity={opacity} />
+        <Path d="M4 12L1 14" stroke={color} strokeWidth="1" strokeOpacity={opacity} />
+        <Path d="M10 6C10 4.3 11.3 3 13 3" stroke={color} strokeWidth="1" strokeOpacity={opacity} />
+    </Svg>
+);
+
+export const PremiumCupIcon = ({ size = 18, color = "#8BA367" }) => (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path d="M17 8C19.2091 8 21 9.79086 21 12C21 14.2091 19.2091 16 17 16H16" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M5 8H17V17C17 19.2091 15.2091 21 13 21H9C6.79086 21 5 19.2091 5 17V8Z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M9 2L9 5" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M13 2L13 5" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);
+
+export const PremiumNoteIcon = ({ size = 18, color = "#8BA367" }) => (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path d="M11 4H4V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V11" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M15.5 3.5L20.5 8.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M13 13H16" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M8 9H12" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M8 13H10" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);
+
+export const PremiumReceiptIcon = ({ size = 20, color = "#8BA367" }) => (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path d="M4 2V22L7 20L10 22L13 20L16 22L19 20L22 22V2L19 4L16 2L13 4L10 2L7 4L4 2Z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M8 8H16" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M8 12H16" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M8 16H12" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);

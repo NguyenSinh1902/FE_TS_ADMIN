@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ScrollView as RnScrollView, TextInput, Modal, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ScrollView as RnScrollView, TextInput, Modal, Platform, useWindowDimensions } from 'react-native';
 import styles from './CustomersTab.styles';
-import { SearchIcon, FilterIcon, BadgeIcon, CartIcon, CoinIcon, PlusIcon, EditIcon, TrashIcon, CloseIcon } from '../StaffIcons';
+import { SearchIcon, FilterIcon, BadgeIcon, CartIcon, CoinIcon, PlusIcon, EditIcon, TrashIcon, CloseIcon, MoreIcon } from '../StaffIcons';
 import customerApi from '../../../api/customerApi';
 import { RefreshControl, ActivityIndicator, Alert, Pressable, StyleSheet } from 'react-native';
 import CustomerFormModal from '../components/CustomerFormModal';
@@ -19,6 +19,8 @@ const TIER_LABEL_MAP = {
 };
 
 const CustomersTab = ({ onModalStateChange }) => {
+    const { width } = useWindowDimensions();
+    const isTablet = width >= 768;
     const [customerList, setCustomerList] = useState([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -27,10 +29,23 @@ const CustomersTab = ({ onModalStateChange }) => {
     const [custFilterTier, setCustFilterTier] = useState('ALL');
     const [custSort, setCustSort] = useState('NEWEST'); 
     
-    // Modals
-    const [selectedCustomer, setSelectedCustomer] = useState(null);
+    // Modals & Menu
+    const [selectedDetail, setSelectedDetail] = useState(null);
     const [showFormModal, setShowFormModal] = useState(false);
     const [formTarget, setFormTarget] = useState(null);
+    const [actionMenuContext, setActionMenuContext] = useState(null);
+    const [filterPos, setFilterPos] = useState(225);
+
+    const onMorePress = (event, data) => {
+        const { pageY } = event.nativeEvent;
+        setActionMenuContext({ y: pageY - 40, data });
+    };
+
+    const onFilterPress = (event) => {
+        const { pageY } = event.nativeEvent;
+        setFilterPos(pageY + 20);
+        setShowCustFilter(true);
+    };
 
     const fetchCustomers = async () => {
         try {
@@ -65,8 +80,8 @@ const CustomersTab = ({ onModalStateChange }) => {
     };
 
     React.useEffect(() => {
-        onModalStateChange(showCustFilter || !!selectedCustomer || showFormModal);
-    }, [showCustFilter, selectedCustomer, showFormModal]);
+        onModalStateChange(showCustFilter || !!selectedDetail || showFormModal || !!actionMenuContext);
+    }, [showCustFilter, selectedDetail, showFormModal, actionMenuContext]);
 
     const handleDelete = (id) => {
         Alert.alert('Xác nhận', 'Bạn có chắc muốn xóa khách hàng này?', [
@@ -77,7 +92,8 @@ const CustomersTab = ({ onModalStateChange }) => {
                 onPress: async () => {
                     try {
                         await customerApi.delete(id);
-                        setSelectedCustomer(null);
+                        setSelectedDetail(null);
+                        setActionMenuContext(null);
                         fetchCustomers();
                     } catch (error) {
                         Alert.alert('Lỗi', 'Không thể xóa khách hàng');
@@ -109,81 +125,138 @@ const CustomersTab = ({ onModalStateChange }) => {
 
     return (
         <View style={{ flex: 1 }}>
-            <View style={[styles.cardSearchRow, { marginHorizontal: 16, marginTop: 16, marginBottom: 8 }]}>
-                <View style={styles.cardSearchInputWrap}>
-                    <SearchIcon />
-                    <TextInput 
-                        style={styles.cardSearchInput} placeholder="Tìm tên hoặc SĐT khách hàng..."
-                        placeholderTextColor="#9CA3AF" value={custSearchQuery} onChangeText={setCustSearchQuery}
-                    />
-                </View>
-                <TouchableOpacity style={styles.cardFilterBtn} onPress={() => setShowCustFilter(true)}><FilterIcon /></TouchableOpacity>
-            </View>
-
             <ScrollView 
-                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }} 
+                contentContainerStyle={isTablet ? { paddingHorizontal: 32, paddingBottom: 120 } : { paddingHorizontal: 16, paddingBottom: 120 }} 
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8BA367']} />}
             >
-                {filteredCustomers.length > 0 ? filteredCustomers.map(cust => {
-                    let isVang = cust.hangKhachHang === 'VANG';
-                    let isBac = cust.hangKhachHang === 'BAC';
-                    let badgeColor = isVang ? "#CA8A04" : (isBac ? "#64748B" : "#8BA367");
-                    let badgeType = isVang ? 'Vang' : (isBac ? 'Bac' : 'Moi');
+                <View style={isTablet ? styles.tableTopBar : { marginTop: 16, marginBottom: 8, flexDirection: 'row', gap: 10 }}>
+                    <View style={isTablet ? styles.tableTopRight : { flex: 1, flexDirection: 'row', gap: 10 }}>
+                        <View style={[styles.cardSearchInputWrap, !isTablet && { flex: 1, width: 'auto', borderRadius: 12 }]}>
+                            <SearchIcon width={18} height={18} />
+                            <TextInput 
+                                style={styles.cardSearchInput} placeholder="Tìm tên hoặc SĐT khách hàng..."
+                                placeholderTextColor="#9CA3AF" value={custSearchQuery} onChangeText={setCustSearchQuery}
+                            />
+                        </View>
+                        <TouchableOpacity style={[styles.cardFilterBtn, !isTablet && { borderRadius: 12 }]} onPress={onFilterPress}><FilterIcon width={18} height={18} /></TouchableOpacity>
+                    </View>
 
-                    return (
+                    {isTablet && (
                         <TouchableOpacity 
-                            key={cust.id} 
-                            style={styles.customerCard}
-                            activeOpacity={0.7}
-                            onPress={() => setSelectedCustomer(cust)}
+                            style={styles.addCustomerBtn} 
+                            activeOpacity={0.8}
+                            onPress={() => { setFormTarget(null); setShowFormModal(true); }}
                         >
-                            <View style={styles.custTopRow}>
-                                <View>
-                                    <Text style={styles.custName}>{cust.hoTen}</Text>
-                                    <View style={[styles.custBadge, styles[`custBadge${badgeType}`]]}>
-                                        <BadgeIcon color={badgeColor} />
-                                        <Text style={styles[`custBadgeText${badgeType}`]}>{TIER_LABEL_MAP[cust.hangKhachHang] || cust.hangKhachHang}</Text>
-                                    </View>
-                                </View>
-                                <View style={{ alignItems: 'flex-end' }}>
-                                    <Text style={styles.custDateLabel}>Số điện thoại</Text>
-                                    <Text style={styles.custDateValue}>{cust.sdt}</Text>
-                                </View>
-                            </View>
-                            <View style={styles.custMetricsRow}>
-                                <View style={styles.metricBoxBlue}>
-                                    <View style={styles.metricHead}><CoinIcon color="#3B82F6" /><Text style={styles.metricLabel}>Đang có</Text></View>
-                                    <Text style={styles.metricValueBlue}>{cust.points} điểm</Text>
-                                </View>
-                                <View style={styles.metricBoxGreen}>
-                                    <View style={styles.metricHead}><CoinIcon color="#10B981" /><Text style={styles.metricLabel}>Tổng tích lũy</Text></View>
-                                    <Text style={styles.metricValueGreen}>{cust.totalPoints}đ</Text>
-                                </View>
-                            </View>
+                            <PlusIcon color="#FFF" width={18} height={18} />
+                            <Text style={styles.addCustomerText}>Thêm mới khách hàng</Text>
                         </TouchableOpacity>
-                    );
-                }) : (
-                    <View style={{ marginTop: 60, alignItems: 'center' }}>
-                        <ActivityIndicator animating={loading} color="#8BA367" />
-                        {!loading && <Text style={{ color: '#9CA3AF', marginTop: 10 }}>Không tìm thấy khách hàng nào</Text>}
+                    )}
+                </View>
+
+                {isTablet ? (
+                    <View>
+                        <View style={styles.tableHeaderRow}>
+                            <Text style={[styles.thCell, { flex: 2 }]}>Khách hàng</Text>
+                            <Text style={[styles.thCell, { flex: 1.5 }]}>Số điện thoại</Text>
+                            <Text style={[styles.thCell, { flex: 1.5 }]}>Hạng thành viên</Text>
+                            <Text style={[styles.thCell, { flex: 1.5 }]}>Điểm tích lũy</Text>
+                            <Text style={[styles.thCell, { width: 60, textAlign: 'center' }]}>Thao tác</Text>
+                        </View>
+                        {filteredCustomers.map(cust => {
+                            let isVang = cust.hangKhachHang === 'VANG';
+                            let isBac = cust.hangKhachHang === 'BAC';
+                            let badgeColor = isVang ? "#CA8A04" : (isBac ? "#64748B" : "#8BA367");
+                            let badgeType = isVang ? 'Vang' : (isBac ? 'Bac' : 'Moi');
+
+                            return (
+                                <TouchableOpacity key={cust.id} style={styles.tableRow} activeOpacity={0.7} onPress={() => setSelectedDetail(cust)}>
+                                    <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center' }}>
+                                        <View style={styles.avatarWrap}>
+                                            <View style={[styles.avatarImg, { backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }]}><Text style={styles.avatarInitials}>{cust.hoTen.charAt(0)}</Text></View>
+                                        </View>
+                                        <Text style={styles.tdCellBold} numberOfLines={1}>{cust.hoTen}</Text>
+                                    </View>
+                                    <Text style={[styles.tdCell, { flex: 1.5 }]}>{cust.sdt}</Text>
+                                    <View style={{ flex: 1.5, flexDirection: 'row' }}>
+                                        <View style={[styles.custBadge, styles[`custBadge${badgeType}`]]}>
+                                            <BadgeIcon color={badgeColor} size={14} />
+                                            <Text style={styles[`custBadgeText${badgeType}`]}>{TIER_LABEL_MAP[cust.hangKhachHang] || cust.hangKhachHang}</Text>
+                                        </View>
+                                    </View>
+                                    <Text style={[styles.tdCell, { flex: 1.5, fontWeight: '700', color: '#10B981' }]}>{cust.points} điểm</Text>
+                                    <View style={{ width: 60, alignItems: 'center' }}>
+                                        <TouchableOpacity style={styles.moreBtn} onPress={(e) => onMorePress(e, cust)}><MoreIcon /></TouchableOpacity>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                ) : (
+                    <View>
+                        {filteredCustomers.length > 0 ? filteredCustomers.map(cust => {
+                            let isVang = cust.hangKhachHang === 'VANG';
+                            let isBac = cust.hangKhachHang === 'BAC';
+                            let badgeColor = isVang ? "#CA8A04" : (isBac ? "#64748B" : "#8BA367");
+                            let badgeType = isVang ? 'Vang' : (isBac ? 'Bac' : 'Moi');
+
+                            return (
+                                <TouchableOpacity 
+                                    key={cust.id} 
+                                    style={styles.customerCard}
+                                    activeOpacity={0.7}
+                                    onPress={() => setSelectedDetail(cust)}
+                                >
+                                    <View style={styles.custTopRow}>
+                                        <View>
+                                            <Text style={styles.custName}>{cust.hoTen}</Text>
+                                            <View style={[styles.custBadge, styles[`custBadge${badgeType}`]]}>
+                                                <BadgeIcon color={badgeColor} />
+                                                <Text style={styles[`custBadgeText${badgeType}`]}>{TIER_LABEL_MAP[cust.hangKhachHang] || cust.hangKhachHang}</Text>
+                                            </View>
+                                        </View>
+                                        <View style={{ alignItems: 'flex-end' }}>
+                                            <Text style={styles.custDateLabel}>Số điện thoại</Text>
+                                            <Text style={styles.custDateValue}>{cust.sdt}</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.custMetricsRow}>
+                                        <View style={styles.metricBoxBlue}>
+                                            <View style={styles.metricHead}><CoinIcon color="#3B82F6" /><Text style={styles.metricLabel}>Đang có</Text></View>
+                                            <Text style={styles.metricValueBlue}>{cust.points} điểm</Text>
+                                        </View>
+                                        <View style={styles.metricBoxGreen}>
+                                            <View style={styles.metricHead}><CoinIcon color="#10B981" /><Text style={styles.metricLabel}>Tổng tích lũy</Text></View>
+                                            <Text style={styles.metricValueGreen}>{cust.totalPoints}đ</Text>
+                                        </View>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        }) : (
+                            <View style={{ marginTop: 60, alignItems: 'center' }}>
+                                <ActivityIndicator animating={loading} color="#8BA367" />
+                                {!loading && <Text style={{ color: '#9CA3AF', marginTop: 10 }}>Không tìm thấy khách hàng nào</Text>}
+                            </View>
+                        )}
                     </View>
                 )}
             </ScrollView>
 
-            {/* FAB Add */}
-            <TouchableOpacity 
-                style={styles.fabExtended} 
-                activeOpacity={0.8}
-                onPress={() => { setFormTarget(null); setShowFormModal(true); }}
-            >
-                <PlusIcon />
-                <Text style={styles.fabText}>Thêm Khách</Text>
-            </TouchableOpacity>
+            {/* FAB Add (mobile only) */}
+            {!isTablet && (
+                <TouchableOpacity 
+                    style={styles.fabExtended} 
+                    activeOpacity={0.8}
+                    onPress={() => { setFormTarget(null); setShowFormModal(true); }}
+                >
+                    <PlusIcon />
+                    <Text style={styles.fabText}>Thêm Khách</Text>
+                </TouchableOpacity>
+            )}
 
             <Modal visible={showCustFilter} transparent animationType="fade">
                 <TouchableOpacity style={styles.filterOverlay} activeOpacity={1} onPress={() => setShowCustFilter(false)}>
-                    <View style={[styles.filterPopupBox, { top: Platform.OS === 'ios' ? 245 : 225 }]}>
+                    <View style={[styles.filterPopupBox, { top: filterPos }]}>
                         <Text style={styles.filterGroupTitle}>Thứ tự thời gian</Text>
                         <RadioItem label="Mới nhất" selected={custSort === 'NEWEST'} onPress={() => setCustSort('NEWEST')} />
                         <RadioItem label="Cũ nhất" selected={custSort === 'OLDEST'} onPress={() => setCustSort('OLDEST')} />
@@ -197,32 +270,52 @@ const CustomersTab = ({ onModalStateChange }) => {
                 </TouchableOpacity>
             </Modal>
 
+            {/* More Menu Modal */}
+            <Modal visible={!!actionMenuContext} transparent animationType="fade">
+                <TouchableOpacity style={styles.anchorOverlay} activeOpacity={1} onPress={() => setActionMenuContext(null)}>
+                    {actionMenuContext && (
+                        <View style={[styles.anchorPopoverBox, { top: actionMenuContext.y }]}>
+                            <TouchableOpacity style={styles.anchorActionBtn} onPress={() => { setFormTarget(actionMenuContext.data); setShowFormModal(true); setActionMenuContext(null); }}><EditIcon /><Text style={styles.anchorActionText}>Chỉnh sửa khách</Text></TouchableOpacity>
+                            <TouchableOpacity style={[styles.anchorActionBtn, { borderBottomWidth: 0 }]} onPress={() => handleDelete(actionMenuContext.data.id)}><TrashIcon /><Text style={[styles.anchorActionText, { color: '#EF4444' }]}>Xóa khách hàng</Text></TouchableOpacity>
+                        </View>
+                    )}
+                </TouchableOpacity>
+            </Modal>
+
             {/* Detail Modal */}
-            <Modal visible={!!selectedCustomer} transparent animationType="fade">
-                <TouchableOpacity style={styles.filterOverlay} activeOpacity={1} onPress={() => setSelectedCustomer(null)}>
-                    <View style={styles.custDetailPop}>
-                        {selectedCustomer && (
+            <Modal visible={!!selectedDetail} transparent animationType="fade">
+                <TouchableOpacity style={styles.detailModalOverlay} activeOpacity={1} onPress={() => setSelectedDetail(null)}>
+                    <TouchableOpacity activeOpacity={1} style={styles.detailCardBox}>
+                        {selectedDetail && (
                             <>
-                                <View style={styles.custDetailTop}>
-                                    <Text style={styles.custDetailTitle}>{selectedCustomer.hoTen}</Text>
-                                    <TouchableOpacity onPress={() => setSelectedCustomer(null)}><CloseIcon color="#64748B" /></TouchableOpacity>
+                                <View style={styles.overlapAvatarWrap}>
+                                    <View style={[styles.ovlAvatarImg, { backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }]}><Text style={[styles.avatarInitials, { fontSize: 32 }]}>{selectedDetail.hoTen.charAt(0)}</Text></View>
                                 </View>
-                                <View style={styles.custDetailInfoBox}>
-                                    <Text style={styles.custDetailLabel}>Số điện thoại: <Text style={styles.custDetailVal}>{selectedCustomer.sdt}</Text></Text>
-                                    <Text style={styles.custDetailLabel}>Hạng hiện tại: <Text style={styles.custDetailVal}>{TIER_NAME_MAP[selectedCustomer.hangKhachHang]}</Text></Text>
-                                    <Text style={styles.custDetailLabel}>Điểm tích lũy: <Text style={[styles.custDetailVal, {color: '#10B981'}]}>{selectedCustomer.points}</Text></Text>
+                                <TouchableOpacity style={styles.detailCloseBtn} onPress={() => setSelectedDetail(null)}><CloseIcon /></TouchableOpacity>
+                                <Text style={styles.detailTitle}>{selectedDetail.hoTen}</Text>
+                                <Text style={styles.detailRole}>{TIER_NAME_MAP[selectedDetail.hangKhachHang]}</Text>
+                                <View style={styles.detailGrid}>
+                                    {[
+                                        { label: 'Số điện thoại', val: selectedDetail.sdt },
+                                        { label: 'Hạng khách hàng', val: TIER_NAME_MAP[selectedDetail.hangKhachHang] },
+                                        { label: 'Điểm hiện có', val: `${selectedDetail.points} điểm` },
+                                        { label: 'Tổng tích lũy', val: `${selectedDetail.totalPoints.toLocaleString()}đ` },
+                                        { label: 'Giới tính', val: selectedDetail.gioiTinh || 'N/A' },
+                                    ].map((cell, idx) => (
+                                        <View key={idx} style={styles.dataCell}><Text style={styles.dataLabel}>{cell.label}</Text><Text style={styles.dataValue}>{cell.val}</Text></View>
+                                    ))}
                                 </View>
                                 <View style={styles.custDetailActions}>
                                     <TouchableOpacity 
                                         style={styles.custDetailBtnEdit}
-                                        onPress={() => { setFormTarget(selectedCustomer); setShowFormModal(true); setSelectedCustomer(null); }}
+                                        onPress={() => { setFormTarget(selectedDetail); setShowFormModal(true); setSelectedDetail(null); }}
                                     >
                                         <EditIcon color="#3B82F6" />
                                         <Text style={styles.custDetailBtnTextEdit}>Chỉnh sửa</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity 
                                         style={styles.custDetailBtnDelete}
-                                        onPress={() => handleDelete(selectedCustomer.id)}
+                                        onPress={() => handleDelete(selectedDetail.id)}
                                     >
                                         <TrashIcon color="#EF4444" />
                                         <Text style={styles.custDetailBtnTextDelete}>Xóa khách</Text>
@@ -230,7 +323,7 @@ const CustomersTab = ({ onModalStateChange }) => {
                                 </View>
                             </>
                         )}
-                    </View>
+                    </TouchableOpacity>
                 </TouchableOpacity>
             </Modal>
 

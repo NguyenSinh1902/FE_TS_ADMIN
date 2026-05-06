@@ -1,0 +1,133 @@
+import React, { useRef, useEffect, useState } from 'react';
+import { View, Text, Pressable, Animated, Image } from 'react-native';
+import styles from './Sidebar.styles';
+import safeAsyncStorage from '../../utils/storage';
+import ProfileModal from './ProfileModal';
+
+const Sidebar = ({
+  activeRoute,
+  onNavigate,
+  isCollapsed,
+  onToggleCollapse
+}) => {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isProfileVisible, setIsProfileVisible] = useState(false);
+
+  useEffect(() => {
+    loadUser();
+  }, [isProfileVisible]); // Reload user after profile is closed to get updates
+
+  const loadUser = async () => {
+    const userStr = await safeAsyncStorage.getItem('user');
+    if (userStr) {
+      setCurrentUser(JSON.parse(userStr));
+    }
+  };
+
+  const handleLogout = async () => {
+    setIsProfileVisible(false);
+    await safeAsyncStorage.removeItem('token');
+    await safeAsyncStorage.removeItem('user');
+    if (onNavigate) {
+      onNavigate('Start', { reset: true });
+    }
+  };
+  const renderNavItem = (route, label, icon) => {
+    const isActive = activeRoute === route;
+    return (
+      <Pressable
+        style={[
+          styles.tabletNavItem,
+          isActive && styles.tabletNavItemActive,
+          isCollapsed && styles.tabletNavItemCollapsed
+        ]}
+        onPress={() => onNavigate(route)}
+      >
+        <View style={styles.tabletNavIconWrap}>
+          <Text style={styles.tabletNavIcon}>{icon}</Text>
+        </View>
+        {!isCollapsed && (
+          <Text style={isActive ? styles.tabletNavLabelActive : styles.tabletNavLabel}>
+            {label}
+          </Text>
+        )}
+      </Pressable>
+    );
+  };
+
+  const animValue = useRef(new Animated.Value(isCollapsed ? 0 : 1)).current;
+
+  useEffect(() => {
+    Animated.timing(animValue, {
+      toValue: isCollapsed ? 0 : 1,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [isCollapsed]);
+
+  const sidebarWidth = animValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['7%', '20%'] // 7% when collapsed, 20% when expanded
+  });
+
+  return (
+    <Animated.View style={[styles.tabletSidebar, { width: sidebarWidth }]}>
+      {/* 1. Header Card */}
+      <Pressable
+        style={[styles.sidebarHeader, isCollapsed && styles.sidebarHeaderCollapsed]}
+        onPress={onToggleCollapse}
+      >
+        <View style={styles.brandGroup}>
+          <View style={styles.brandLogo}><Text style={styles.brandLogoText}>🍃</Text></View>
+          {!isCollapsed && (
+            <View style={styles.brandTitleGroup}>
+              <Text style={styles.brandTitle}>MatchTea</Text>
+              <Text style={styles.brandSubtitle}>App Quản lý</Text>
+            </View>
+          )}
+        </View>
+      </Pressable>
+
+      {/* 2. Main Navigation Card */}
+      <View style={[styles.tabletNavContainer, isCollapsed && styles.tabletNavContainerCollapsed]}>
+        {renderNavItem('Dashboard', 'Tổng quan', '🏠')}
+        {renderNavItem('StaffManagement', 'Nhân viên', '👥')}
+        {renderNavItem('Menu', 'Thực đơn', '🍵')}
+        {renderNavItem('Facility', 'Cơ sở vật chất', '🏢')}
+        {renderNavItem('Finance', 'Tài chính', '💰')}
+      </View>
+
+      {/* 3. Footer Profile Card */}
+      <View style={[styles.sidebarFooter, isCollapsed && styles.sidebarFooterCollapsed]}>
+        <Pressable
+          style={styles.userProfileGroup}
+          onPress={() => setIsProfileVisible(true)}
+        >
+          <View style={styles.avatarWrap}>
+            {currentUser?.hinhAnh ? (
+                <Image source={{ uri: currentUser.hinhAnh }} style={{ width: 44, height: 44, borderRadius: 22 }} />
+            ) : (
+                <Text style={styles.avatarInitials}>
+                  {currentUser?.hoTen ? currentUser.hoTen.split(' ').pop().substring(0, 2).toUpperCase() : 'AD'}
+                </Text>
+            )}
+          </View>
+          {!isCollapsed && (
+            <View style={styles.userInfoText}>
+              <Text style={styles.userName} numberOfLines={1}>{currentUser?.hoTen || 'Quản trị viên'}</Text>
+              <Text style={styles.userRole}>Chủ cửa hàng</Text>
+            </View>
+          )}
+        </Pressable>
+      </View>
+
+      <ProfileModal 
+        visible={isProfileVisible} 
+        onClose={() => setIsProfileVisible(false)} 
+        onLogout={handleLogout} 
+      />
+    </Animated.View>
+  );
+};
+
+export default Sidebar;

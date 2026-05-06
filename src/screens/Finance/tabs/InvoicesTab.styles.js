@@ -45,7 +45,6 @@ export default StyleSheet.create({
         overflow: 'hidden',
         shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
-        borderWidth: 1, borderColor: '#F1F5F9'
     },
     cardAccent: { width: 6, height: '100%', position: 'absolute', left: 0, top: 0 },
     cardContent: { padding: 16, paddingLeft: 22 },

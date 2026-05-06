@@ -24,10 +24,11 @@ export default function Header({
     title = 'Dashboard', 
     unreadCount = 0,
     onNotificationPress,
-    onAvatarPress
+    onAvatarPress,
+    containerStyle
 }) {
     return (
-        <LinearGradient colors={['#8BA367', '#6c854c']} style={styles.headerContainer}>
+        <LinearGradient colors={['#8BA367', '#6c854c']} style={[styles.headerContainer, containerStyle]}>
             {/* Shapes trang trí mờ ảo ở nền gradient */}
             <DecorativeBackground />
 
@@ -118,13 +119,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     greetingText: {
-        color: 'rgba(255, 255, 255, 0.85)',
+        color: '#4A5D23',
         fontSize: 14,
         fontWeight: '500',
         marginBottom: 2,
     },
     headerTitle: {
-        color: 'white',
+        color: '#1B2A15',
         fontSize: 22,
         fontWeight: '700',
         letterSpacing: 0.5,

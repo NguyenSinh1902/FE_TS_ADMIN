@@ -353,4 +353,33 @@ export default StyleSheet.create({
         backgroundColor: '#F9FAFB', padding: 12, borderRadius: 12, marginBottom: 15
     },
     switchLabel: { fontSize: 14, fontWeight: '700', color: '#475569' },
+
+    // -- Tablet Specific Styles --
+    tabletContainer: {
+        flex: 1,
+        flexDirection: 'row',
+        backgroundColor: '#F8FAFC',
+    },
+    tabletMain: {
+        flex: 1,
+        backgroundColor: 'transparent',
+    },
+    tabletHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 24,
+        paddingHorizontal: 32,
+        paddingTop: 32,
+    },
+    tabletHeaderTitle: {
+        fontSize: 28,
+        fontWeight: '800',
+        color: '#101828',
+    },
+    tabletTabRow: {
+        marginHorizontal: 0,
+        marginVertical: 0,
+        width: 300,
+    },
 });

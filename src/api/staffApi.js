@@ -6,7 +6,9 @@ const staffApi = {
     getOperating: () => axiosClient.get('/nhan-vien/van-hanh'),
     updateStatus: (id, status) => axiosClient.patch(`/nhan-vien/${id}/trang-thai?status=${status}`),
     delete: (id) => axiosClient.delete(`/nhan-vien/${id}`),
-    updateProfile: (id, data) => axiosClient.put(`/nhan-vien/${id}/profile`, data),
+    updateProfile: (id, formData) => axiosClient.put(`/nhan-vien/${id}/profile`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
     updateRole: (id, role) => axiosClient.patch(`/nhan-vien/${id}/vai-tro?role=${role}`),
 };
 

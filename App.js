@@ -1,4 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { StatusBar, View, ActivityIndicator } from 'react-native';
+import safeAsyncStorage from './src/utils/storage';
+
 import Start from './src/screens/Start';
 import Login from './src/screens/Login';
 import Dashboard from './src/screens/Dashboard';
@@ -9,41 +14,79 @@ import Finance from './src/screens/Finance';
 import CategoryDetail from './src/screens/Menu/sub-screens/CategoryDetail';
 import ProductDetail from './src/screens/Menu/sub-screens/ProductDetail';
 
+const Stack = createNativeStackNavigator();
+
 const App = () => {
-  const [currentScreen, setCurrentScreen] = useState('Start');
-  const [screenParams, setScreenParams] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [initialRoute, setInitialRoute] = useState('Start');
 
-  const navigate = (screen, params = {}) => {
-    setScreenParams(params);
-    setCurrentScreen(screen);
-  };
+  useEffect(() => {
+    checkLoginSession();
+  }, []);
 
-  const renderScreen = () => {
-    switch (currentScreen) {
-      case 'Start':
-        return <Start onNavigate={navigate} />;
-      case 'Login':
-        return <Login onNavigate={navigate} />;
-      case 'Dashboard':
-        return <Dashboard onNavigate={navigate} params={screenParams} />;
-      case 'Menu':
-        return <Menu onNavigate={navigate} params={screenParams} />;
-      case 'StaffManagement':
-        return <StaffManagement onNavigate={navigate} params={screenParams} />;
-      case 'Facility':
-        return <Facility onNavigate={navigate} params={screenParams} />;
-      case 'Finance':
-        return <Finance onNavigate={navigate} params={screenParams} />;
-      case 'CategoryDetail':
-        return <CategoryDetail onNavigate={navigate} params={screenParams} />;
-      case 'ProductDetail':
-        return <ProductDetail onNavigate={navigate} params={screenParams} />;
-      default:
-        return <Start onNavigate={navigate} />;
+  const checkLoginSession = async () => {
+    try {
+      const token = await safeAsyncStorage.getItem('token');
+      if (token) {
+        setInitialRoute('Dashboard');
+      } else {
+        setInitialRoute('Start');
+      }
+    } catch (e) {
+      setInitialRoute('Start');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  return renderScreen();
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+        <ActivityIndicator size="large" color="#34A853" />
+      </View>
+    );
+  }
+
+  const renderScreen = (Component, extraProps = {}) => {
+    return ({ navigation, route }) => (
+      <Component 
+        {...extraProps}
+        params={route.params || {}}
+        onNavigate={(screen, params) => {
+          if (params?.goBack) {
+            navigation.goBack();
+          } else if (params?.reset) {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: screen, params: params?.params || {} }],
+            });
+          } else {
+            navigation.navigate(screen, params);
+          }
+        }}
+      />
+    );
+  };
+
+  return (
+    <NavigationContainer>
+      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <Stack.Navigator
+        initialRouteName={initialRoute}
+        screenOptions={{ headerShown: false, animation: 'slide_from_right' }}
+      >
+        <Stack.Screen name="Start" component={renderScreen(Start)} />
+        <Stack.Screen name="Login" component={renderScreen(Login)} />
+        <Stack.Screen name="Dashboard" component={renderScreen(Dashboard)} />
+        <Stack.Screen name="Menu" component={renderScreen(Menu)} />
+        <Stack.Screen name="StaffManagement" component={renderScreen(StaffManagement)} />
+        <Stack.Screen name="Facility" component={renderScreen(Facility)} />
+        <Stack.Screen name="Finance" component={renderScreen(Finance)} />
+        <Stack.Screen name="CategoryDetail" component={renderScreen(CategoryDetail)} />
+        <Stack.Screen name="ProductDetail" component={renderScreen(ProductDetail)} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
 };
 
 export default App;

@@ -72,7 +72,8 @@ export default StyleSheet.create({
     modalTitle: { fontSize: 22, fontWeight: '800', color: '#1E2939' },
     systemBadge: { backgroundColor: '#FEF2F2', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start', marginVertical: 8 },
     systemText: { fontSize: 12, color: '#EF4444', fontWeight: '700' },
-    catCountText: { fontSize: 14, color: '#6B7280', marginVertical: 8 },
+    catCountText: { fontSize: 14, color: '#6B7280', marginVertical: 4 },
+    modalDescription: { fontSize: 15, color: '#4B5563', fontStyle: 'italic', marginBottom: 12, lineHeight: 22 },
     warningBox: { backgroundColor: '#FFFBEB', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#FEF3C7', marginVertical: 12 },
     warningText: { fontSize: 13, color: '#B45309', lineHeight: 18 },
     catModalListContainer: { marginTop: 24, paddingBottom: 10 },
@@ -98,4 +99,60 @@ export default StyleSheet.create({
         shadowOpacity: 0.3, shadowRadius: 8, elevation: 6
     },
     fabText: { color: 'white', fontWeight: '800', marginLeft: 8, fontSize: 14 },
+    /* --- Tablet Table Styles --- */
+    tableTopBar: {
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        marginBottom: 20, paddingHorizontal: 32
+    },
+    tableContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(255, 255, 255, 0.8)', // Porcelain white with glass effect
+        marginHorizontal: 32,
+        borderRadius: 28,
+        overflow: 'hidden',
+        // No border as requested
+        shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.05, shadowRadius: 20,
+        marginBottom: 32,
+    },
+    tableHeader: {
+        flexDirection: 'row', 
+        paddingVertical: 18, 
+        backgroundColor: '#F1F5E9', // Soft Matcha tint
+        paddingHorizontal: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0,0,0,0.03)',
+    },
+    headerCell: { 
+        fontSize: 12, 
+        fontWeight: '800', 
+        color: '#8BA367', 
+        textTransform: 'uppercase', 
+        letterSpacing: 1.2 
+    },
+    tableRow: {
+        flexDirection: 'row', 
+        paddingVertical: 14, 
+        alignItems: 'center', 
+        paddingHorizontal: 20,
+        borderBottomWidth: 0.5, // Very thin divider
+        borderBottomColor: 'rgba(148, 163, 184, 0.15)',
+    },
+    rowCell: { fontSize: 15, color: '#1B2A15', fontWeight: '500' },
+    catIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: '#F1F5F9' },
+    systemTag: {
+        backgroundColor: 'rgba(239, 68, 68, 0.08)',
+        paddingHorizontal: 14, paddingVertical: 6,
+        borderRadius: 20, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.2)',
+        alignSelf: 'flex-start',
+    },
+    systemTagText: { color: '#DC2626', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+    normalTag: {
+        backgroundColor: 'rgba(139, 163, 103, 0.08)',
+        paddingHorizontal: 14, paddingVertical: 6,
+        borderRadius: 20, borderWidth: 1, borderColor: 'rgba(139, 163, 103, 0.2)',
+        alignSelf: 'flex-start',
+    },
+    normalTagText: { color: '#5E8D48', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+    actionBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(139, 163, 103, 0.08)', justifyContent: 'center', alignItems: 'center' },
 });

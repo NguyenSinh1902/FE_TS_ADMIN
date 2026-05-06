@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, Modal, Switch, TextInput, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, Modal, Switch, TextInput, Platform, useWindowDimensions } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import styles from './StaffTab.styles';
 import { 
     ClockIcon, CheckCircleIcon, SearchIcon, FilterIcon, 
@@ -28,12 +29,14 @@ const StaffTab = ({ onModalStateChange }) => {
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [showStaffFilter, setShowStaffFilter] = useState(false);
+    const [showPendingModal, setShowPendingModal] = useState(false);
     const [staffFilterRole, setStaffFilterRole] = useState('ALL');
     const [staffSort, setStaffSort] = useState('NEWEST'); 
     
     const [actionMenuContext, setActionMenuContext] = useState(null);
     const [selectedDetail, setSelectedDetail] = useState(null);
     const [selectedStaff, setSelectedStaff] = useState(null);
+    const [filterPos, setFilterPos] = useState(360);
 
     const fetchStaffs = async () => {
         try {
@@ -53,7 +56,7 @@ const StaffTab = ({ onModalStateChange }) => {
                 gioiTinh: item.gioiTinh || 'N/A',
                 ngaySinh: item.ngaySinh || 'N/A',
                 trangThai: item.trangThai,
-                img: `https://i.pravatar.cc/150?u=${item.idNhanVien}` // Fallback img
+                img: item.hinhAnh ? item.hinhAnh : `https://i.pravatar.cc/150?u=${item.idNhanVien}` 
             });
 
             setPendingList((pending || []).filter(i => i.vaiTro !== 'ADMIN').map(mapStaff));
@@ -138,7 +141,13 @@ const StaffTab = ({ onModalStateChange }) => {
     }, [actionMenuContext, selectedDetail, showStaffFilter, selectedStaff]);
 
     const onMorePress = (e, item) => {
-        setActionMenuContext({ data: item, y: e.nativeEvent.pageY - 30 });
+        setActionMenuContext({ data: item, y: e.nativeEvent.pageY - 40 });
+    };
+
+    const onFilterPress = (event) => {
+        const { pageY } = event.nativeEvent;
+        setFilterPos(pageY + 20);
+        setShowStaffFilter(true);
     };
 
     const filteredActiveList = activeList.filter(item => {
@@ -161,88 +170,197 @@ const StaffTab = ({ onModalStateChange }) => {
         </TouchableOpacity>
     );
 
+    const { width } = useWindowDimensions();
+    const isTablet = width >= 768;
+
+    const renderPendingList = () => (
+        <View style={[styles.sectionCard, pendingList.length === 0 && { opacity: 0.6 }, isTablet && { flex: 1 }]}>
+            <View style={styles.sectionHeader}>
+                <View style={styles.sectionIconBox}><ClockIcon /></View>
+                <View style={styles.sectionTitleRow}>
+                    <Text style={styles.sectionTitle}>Tài khoản chờ duyệt</Text>
+                    <View style={styles.badgeRed}><Text style={styles.badgeRedText}>{pendingList.length}</Text></View>
+                </View>
+            </View>
+            <ScrollView style={styles.nestedScrollWrap} nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
+                {pendingList.length > 0 ? pendingList.map(item => (
+                    <View key={item.id} style={styles.pendItem}>
+                        <TouchableOpacity activeOpacity={0.7} onPress={() => setSelectedDetail(item)}>
+                            <View style={styles.pendTopRow}>
+                                <View style={styles.staffBasicInfo}>
+                                    <Text style={styles.staffName}>{item.hoTen}</Text>
+                                    <Text style={styles.staffRole}>{item.vaiTro}</Text>
+                                    <Text style={styles.staffEmail}>{item.email}</Text>
+                                </View>
+                                <View style={styles.dateCol}>
+                                    <Text style={styles.dateLabel}>Điện thoại</Text>
+                                    <Text style={styles.dateValue}>{item.sdt}</Text>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                        <View style={styles.pendActionRow}>
+                            <TouchableOpacity style={styles.btnAccept} activeOpacity={0.8} onPress={() => handleAccept(item.id)}>
+                                <LinearGradient colors={['#8BA367', '#5D6D45']} style={styles.btnAcceptGradient}>
+                                    <CheckCircleIcon color="#FFFFFF" />
+                                    <Text style={styles.btnAcceptText}>Cấp quyền</Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.btnReject} activeOpacity={0.7} onPress={() => handleReject(item.id)}>
+                                <CloseIcon color="#EF4444" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )) : (
+                    <Text style={{ textAlign: 'center', color: '#9CA3AF', marginVertical: 20 }}>Không có yêu cầu chờ duyệt</Text>
+                )}
+            </ScrollView>
+        </View>
+    );
+
+    const renderActiveList = () => (
+        <View style={[styles.sectionCard, isTablet && { flex: 1 }]}>
+            <View style={isTablet ? styles.tableTopBar : { paddingHorizontal: 16, marginBottom: 16 }}>
+                {/* Left: Search + Filter */}
+                <View style={styles.tableTopRight}>
+                    <View style={styles.cardSearchInputWrap}>
+                        <SearchIcon width={18} height={18} />
+                        <TextInput style={styles.cardSearchInput} placeholder="Tìm tên nhân viên..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery}/>
+                    </View>
+                    <TouchableOpacity style={styles.cardFilterBtn} onPress={onFilterPress}>
+                        <FilterIcon width={18} height={18} />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Right: Pending Button (tablet only) */}
+                {isTablet && (
+                    <TouchableOpacity style={styles.pendingActionBtn} onPress={() => setShowPendingModal(true)} activeOpacity={0.8}>
+                        <ClockIcon color="#FFF" width={18} height={18} />
+                        <Text style={styles.pendingActionText}>Tài khoản chờ duyệt</Text>
+                        {pendingList.length > 0 && (
+                            <View style={styles.pendingActionBadge}>
+                                <Text style={styles.pendingActionBadgeText}>{pendingList.length}</Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            {isTablet ? (
+                <View>
+                    <View style={styles.tableHeaderRow}>
+                        <Text style={[styles.thCell, { flex: 2 }]}>Avatar / Họ tên</Text>
+                        <Text style={[styles.thCell, { flex: 1.5 }]}>Chức vụ</Text>
+                        <Text style={[styles.thCell, { flex: 2 }]}>Email</Text>
+                        <Text style={[styles.thCell, { flex: 1.5 }]}>Số điện thoại</Text>
+                        <Text style={[styles.thCell, { width: 100, textAlign: 'center' }]}>Trạng thái</Text>
+                        <Text style={[styles.thCell, { width: 60, textAlign: 'center' }]}>Thao tác</Text>
+                    </View>
+                    {filteredActiveList.map(item => (
+                        <TouchableOpacity key={item.id} style={styles.tableRow} activeOpacity={0.7} onPress={() => setSelectedDetail(item)}>
+                            <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={styles.avatarWrap}>
+                                    {item.img ? <Image source={{ uri: item.img }} style={styles.avatarImg} /> : <View style={[styles.avatarImg, { backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center' }]}><Text style={styles.avatarInitials}>{item.hoTen.charAt(0)}</Text></View>}
+                                    <View style={[styles.activeDot, item.trangThai === 'BI_KHOA' && styles.inactiveDot]} />
+                                </View>
+                                <Text style={[styles.tdCellBold, item.trangThai === 'BI_KHOA' && { color: '#9CA3AF' }]} numberOfLines={1}>{item.hoTen}</Text>
+                            </View>
+                            <Text style={[styles.tdCell, { flex: 1.5 }]}>{item.vaiTro}</Text>
+                            <Text style={[styles.tdCell, { flex: 2 }]} numberOfLines={1}>{item.email}</Text>
+                            <Text style={[styles.tdCell, { flex: 1.5 }]}>{item.sdt}</Text>
+                            <View style={{ width: 100, alignItems: 'center' }}>
+                                <Switch trackColor={{ false: "#E5E7EB", true: "#BBF7D0" }} thumbColor={item.trangThai === 'HOAT_DONG' ? "#10B981" : "#FFF"} value={item.trangThai === 'HOAT_DONG'} onValueChange={() => toggleStatus(item)} style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}/>
+                            </View>
+                            <View style={{ width: 60, alignItems: 'center' }}>
+                                <TouchableOpacity style={styles.moreBtn} onPress={(e) => onMorePress(e, item)}><MoreIcon /></TouchableOpacity>
+                            </View>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            ) : (
+                <View style={{ paddingBottom: 20 }}>
+                    {filteredActiveList.map(item => (
+                        <View key={item.id} style={styles.activeItem}>
+                            <TouchableOpacity style={{ flexDirection: 'row', flex: 1, alignItems: 'center' }} activeOpacity={0.7} onPress={() => setSelectedDetail(item)}>
+                                <View style={styles.avatarWrap}>
+                                    {item.img ? <Image source={{ uri: item.img }} style={styles.avatarImg} /> : <View style={[styles.avatarImg, { backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }]}><Text style={styles.avatarInitials}>{item.hoTen.charAt(0)}</Text></View>}
+                                    <View style={[styles.activeDot, item.trangThai === 'BI_KHOA' && styles.inactiveDot]} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={[styles.staffName, item.trangThai === 'BI_KHOA' && { color: '#9CA3AF' }]}>{item.hoTen}</Text>
+                                    <Text style={styles.staffRole}>{item.vaiTro}</Text>
+                                </View>
+                            </TouchableOpacity>
+                            <Switch trackColor={{ false: "#E5E7EB", true: "#BBF7D0" }} thumbColor={item.trangThai === 'HOAT_DONG' ? "#10B981" : "#FFF"} value={item.trangThai === 'HOAT_DONG'} onValueChange={() => toggleStatus(item)} style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }], marginRight: 4 }}/>
+                            <TouchableOpacity style={styles.moreBtn} onPress={(e) => onMorePress(e, item)}><MoreIcon /></TouchableOpacity>
+                        </View>
+                    ))}
+                </View>
+            )}
+        </View>
+    );
+
     return (
         <View style={{ flex: 1 }}>
             <ScrollView 
-                contentContainerStyle={styles.bodyScroll} 
+                contentContainerStyle={isTablet ? styles.tabletSplitLayout : styles.bodyScroll} 
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8BA367']} />}
             >
-                {/* CARD 1: CHỜ PHÊ DUYỆT */}
-                <View style={[styles.sectionCard, pendingList.length === 0 && { opacity: 0.6 }]}>
-                    <View style={styles.sectionHeader}>
-                        <View style={styles.sectionIconBox}><ClockIcon /></View>
-                        <View style={styles.sectionTitleRow}>
-                            <Text style={styles.sectionTitle}>Tài khoản chờ duyệt</Text>
-                            <View style={styles.badgeRed}><Text style={styles.badgeRedText}>{pendingList.length}</Text></View>
-                        </View>
+                {isTablet ? (
+                    <View style={styles.tabletMainCol}>
+                        {renderActiveList()}
                     </View>
-                    <ScrollView style={styles.nestedScrollWrap} nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
-                        {pendingList.length > 0 ? pendingList.map(item => (
-                            <View key={item.id} style={styles.pendItem}>
-                                <TouchableOpacity activeOpacity={0.7} onPress={() => setSelectedDetail(item)}>
-                                    <View style={styles.pendTopRow}>
-                                        <View style={styles.staffBasicInfo}>
-                                            <Text style={styles.staffName}>{item.hoTen}</Text>
-                                            <Text style={styles.staffRole}>{item.vaiTro}</Text>
-                                            <Text style={styles.staffEmail}>{item.email}</Text>
-                                        </View>
-                                        <View style={styles.dateCol}>
-                                            <Text style={styles.dateLabel}>Điện thoại</Text>
-                                            <Text style={styles.dateValue}>{item.sdt}</Text>
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>
-                                <View style={styles.pendActionRow}>
-                                    <TouchableOpacity style={styles.btnAccept} activeOpacity={0.7} onPress={() => handleAccept(item.id)}>
-                                        <CheckCircleIcon color="#FFFFFF" />
-                                        <Text style={styles.btnAcceptText}>Cấp quyền kích hoạt</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.btnReject} activeOpacity={0.7} onPress={() => handleReject(item.id)}><CloseIcon /></TouchableOpacity>
-                                </View>
-                            </View>
-                        )) : (
-                            <Text style={{ textAlign: 'center', color: '#9CA3AF', marginVertical: 20 }}>Không có yêu cầu chờ duyệt</Text>
-                        )}
-                    </ScrollView>
-                </View>
-
-                {/* CARD 2: NHÂN VIÊN ĐANG LÀM */}
-                <View style={styles.sectionCard}>
-                    <View style={styles.sectionHeader}>
-                        <View style={[styles.sectionIconBox, styles.sectionIconBoxGreen]}><CheckCircleIcon /></View>
-                        <View style={styles.sectionTitleRow}>
-                            <Text style={styles.sectionTitle}>Danh sách Vận hành</Text>
-                            <View style={styles.badgeGreen}><Text style={styles.badgeGreenText}>{filteredActiveList.filter(l=>l.trangThai === 'HOAT_DONG').length}</Text></View>
-                        </View>
-                    </View>
-                    <View style={styles.cardSearchRow}>
-                        <View style={styles.cardSearchInputWrap}>
-                            <SearchIcon />
-                            <TextInput style={styles.cardSearchInput} placeholder="Tìm tên nhân viên..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery}/>
-                        </View>
-                        <TouchableOpacity style={styles.cardFilterBtn} onPress={() => setShowStaffFilter(true)}><FilterIcon /></TouchableOpacity>
-                    </View>
-                    <View style={{ paddingBottom: 20 }}>
-                        {filteredActiveList.map(item => (
-                            <View key={item.id} style={styles.activeItem}>
-                                <TouchableOpacity style={{ flexDirection: 'row', flex: 1, alignItems: 'center' }} activeOpacity={0.7} onPress={() => setSelectedDetail(item)}>
-                                    <View style={styles.avatarWrap}>
-                                        {item.img ? <Image source={{ uri: item.img }} style={styles.avatarImg} /> : <View style={[styles.avatarImg, { backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }]}><Text style={styles.avatarInitials}>{item.hoTen.charAt(0)}</Text></View>}
-                                        <View style={[styles.activeDot, item.trangThai === 'BI_KHOA' && styles.inactiveDot]} />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={[styles.staffName, item.trangThai === 'BI_KHOA' && { color: '#9CA3AF' }]}>{item.hoTen}</Text>
-                                        <Text style={styles.staffRole}>{item.vaiTro}</Text>
-                                    </View>
-                                </TouchableOpacity>
-                                <Switch trackColor={{ false: "#E5E7EB", true: "#BBF7D0" }} thumbColor={item.trangThai === 'HOAT_DONG' ? "#10B981" : "#FFF"} value={item.trangThai === 'HOAT_DONG'} onValueChange={() => toggleStatus(item)} style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }], marginRight: 4 }}/>
-                                <TouchableOpacity style={styles.moreBtn} onPress={(e) => onMorePress(e, item)}><MoreIcon /></TouchableOpacity>
-                            </View>
-                        ))}
-                    </View>
-                </View>
+                ) : (
+                    <>
+                        {renderPendingList()}
+                        {renderActiveList()}
+                    </>
+                )}
             </ScrollView>
+
+            {/* Modal for Pending List (Tablet only) */}
+            <Modal visible={showPendingModal} transparent animationType="fade">
+                <TouchableOpacity style={styles.pendingModalOverlay} activeOpacity={1} onPress={() => setShowPendingModal(false)}>
+                    <TouchableOpacity activeOpacity={1} style={styles.pendingModalBox}>
+                        <TouchableOpacity style={styles.detailCloseBtn} onPress={() => setShowPendingModal(false)}>
+                            <CloseIcon />
+                        </TouchableOpacity>
+                        <Text style={styles.pendingModalTitle}>Tài khoản chờ duyệt</Text>
+                        <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={true}>
+                            {pendingList.length > 0 ? pendingList.map(item => (
+                                <View key={item.id} style={styles.pendItemCard}>
+                                    <TouchableOpacity activeOpacity={0.7} onPress={() => { setShowPendingModal(false); setSelectedDetail(item); }}>
+                                        <View style={styles.pendTopRow}>
+                                            <View style={styles.staffBasicInfo}>
+                                                <Text style={styles.staffName}>{item.hoTen}</Text>
+                                                <Text style={styles.staffRole}>{item.vaiTro}</Text>
+                                                <Text style={styles.staffEmail}>{item.email}</Text>
+                                            </View>
+                                            <View style={styles.dateCol}>
+                                                <Text style={styles.dateLabel}>Điện thoại</Text>
+                                                <Text style={styles.dateValue}>{item.sdt}</Text>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                    <View style={styles.pendActionRow}>
+                                        <TouchableOpacity style={styles.btnAccept} activeOpacity={0.8} onPress={() => handleAccept(item.id)}>
+                                            <LinearGradient colors={['#8BA367', '#5D6D45']} style={styles.btnAcceptGradient}>
+                                                <CheckCircleIcon color="#FFFFFF" />
+                                                <Text style={styles.btnAcceptText}>Cấp quyền kích hoạt</Text>
+                                            </LinearGradient>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.btnReject} activeOpacity={0.7} onPress={() => handleReject(item.id)}>
+                                            <CloseIcon color="#EF4444" />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            )) : (
+                                <Text style={{ textAlign: 'center', color: '#9CA3AF', marginVertical: 20 }}>Không có yêu cầu chờ duyệt</Text>
+                            )}
+                        </ScrollView>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
 
             {/* Modals from StaffTab */}
             <Modal visible={!!actionMenuContext} transparent animationType="fade">
@@ -288,7 +406,7 @@ const StaffTab = ({ onModalStateChange }) => {
 
             <Modal visible={showStaffFilter} transparent animationType="fade">
                 <TouchableOpacity style={styles.filterOverlay} activeOpacity={1} onPress={() => setShowStaffFilter(false)}>
-                    <View style={[styles.filterPopupBox, { top: Platform.OS === 'ios' ? 380 : 360 }]}>
+                    <View style={[styles.filterPopupBox, { top: filterPos }]}>
                         <Text style={styles.filterGroupTitle}>Nhóm Phân quyền</Text>
                         <RadioItem label="Tất cả" selected={staffFilterRole === 'ALL'} onPress={() => setStaffFilterRole('ALL')} />
                         <RadioItem label="Thu ngân" selected={staffFilterRole === 'THU_NGAN'} onPress={() => setStaffFilterRole('THU_NGAN')} />

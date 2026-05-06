@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Modal, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Modal, Platform, useWindowDimensions, StyleSheet } from 'react-native';
 import Svg, { Circle, Rect, Path } from 'react-native-svg';
+import LinearGradient from 'react-native-linear-gradient';
 import styles from '../../Facility.styles';
 import promotionApi from '../../../../api/promotionApi';
 import { RefreshControl, ActivityIndicator, Alert } from 'react-native';
@@ -59,7 +60,70 @@ const RadioItem = ({ label, selected, onPress }) => (
     </TouchableOpacity>
 );
 
+const tabletStyles = StyleSheet.create({
+    toolbarRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+        paddingHorizontal: 0,
+    },
+    searchWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        width: '50%',
+    },
+    searchInputWrap: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        height: 48,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.05)',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5,
+    },
+    filterBtn: {
+        width: 48, height: 48, borderRadius: 16,
+        backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)',
+        justifyContent: 'center', alignItems: 'center',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5,
+    },
+    addBtnWrap: {
+        borderRadius: 24,
+        overflow: 'hidden',
+    },
+    addBtnGradient: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        height: 48,
+        gap: 8,
+    },
+    addBtnText: {
+        color: '#FFFFFF',
+        fontWeight: '700',
+        fontSize: 15,
+    },
+    gridContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginHorizontal: -8,
+    },
+    promoCardTablet: {
+        width: '50%', // 2 columns
+        paddingHorizontal: 8,
+        marginBottom: 16,
+    }
+});
+
 export default function PromotionsTab({ setIsAnyModalOpen }) {
+    const { width } = useWindowDimensions();
+    const isTablet = width >= 768;
+
     const [localPromos, setLocalPromos] = useState([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -192,87 +256,134 @@ export default function PromotionsTab({ setIsAnyModalOpen }) {
         return matchSearch && matchType && matchStatus;
     });
 
+
+
     return (
         <View style={{ flex: 1 }}>
-            <View style={styles.searchRow}>
-                <View style={styles.searchInputWrapper}>
-                    <SearchIcon />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Tìm mã khuyến mãi..."
-                        placeholderTextColor="#9CA3AF"
-                        value={promoSearchQuery}
-                        onChangeText={setPromoSearchQuery}
-                    />
+            {isTablet ? (
+                <View style={tabletStyles.toolbarRow}>
+                    <View style={tabletStyles.searchWrap}>
+                        <View style={tabletStyles.searchInputWrap}>
+                            <SearchIcon />
+                            <TextInput
+                                style={[styles.searchInput, { flex: 1, marginLeft: 10 }]}
+                                placeholder="Tìm mã khuyến mãi..."
+                                placeholderTextColor="#9CA3AF"
+                                value={promoSearchQuery}
+                                onChangeText={setPromoSearchQuery}
+                            />
+                        </View>
+                        <TouchableOpacity style={tabletStyles.filterBtn} onPress={() => setShowFilter(true)}>
+                            <FilterIcon />
+                        </TouchableOpacity>
+                    </View>
+                    <TouchableOpacity style={tabletStyles.addBtnWrap} activeOpacity={0.9} onPress={onOpenAddPromo}>
+                        <LinearGradient colors={['#8BA367', '#6B8743']} style={tabletStyles.addBtnGradient}>
+                            <PlusIcon />
+                            <Text style={tabletStyles.addBtnText}>Thêm mã mới</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.filterBtn} onPress={() => setShowFilter(true)}>
-                    <FilterIcon />
-                </TouchableOpacity>
-            </View>
+            ) : (
+                <View style={styles.searchRow}>
+                    <View style={styles.searchInputWrapper}>
+                        <SearchIcon />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Tìm mã khuyến mãi..."
+                            placeholderTextColor="#9CA3AF"
+                            value={promoSearchQuery}
+                            onChangeText={setPromoSearchQuery}
+                        />
+                    </View>
+                    <TouchableOpacity style={styles.filterBtn} onPress={() => setShowFilter(true)}>
+                        <FilterIcon />
+                    </TouchableOpacity>
+                </View>
+            )}
 
             <ScrollView 
-                contentContainerStyle={styles.bodyScroll} 
+                contentContainerStyle={[styles.bodyScroll, isTablet && { paddingBottom: 50 }]} 
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8BA367']} />}
             >
                 {loading && localPromos.length === 0 && (
                     <ActivityIndicator color="#8BA367" style={{ marginTop: 20 }} />
                 )}
-                {filteredPromos.map(promo => {
-                    const active = isPromoActive(promo);
-                    return (
-                        <TouchableOpacity
-                            key={promo.idKhuyenMai}
-                            style={styles.promoCard}
-                            activeOpacity={0.9}
-                            onPress={() => setSelectedPromo(promo)}
-                        >
-                            <View style={[styles.couponLeft, { backgroundColor: promo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? '#10B981' : '#6366F1' }]}>
-                                <View style={styles.couponCutout} />
-                                <Text style={styles.verticalText}>DISCOUNT</Text>
-                            </View>
+                
+                <View style={isTablet ? tabletStyles.gridContainer : null}>
+                    {filteredPromos.map(promo => {
+                        const active = isPromoActive(promo);
+                        const cardContent = (
+                            <>
+                                <View style={[styles.couponLeft, { backgroundColor: promo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? '#10B981' : '#6366F1' }]}>
+                                    <View style={styles.couponCutout} />
+                                    <Text style={styles.verticalText}>DISCOUNT</Text>
+                                </View>
 
-                            <View style={[styles.couponRight, !active && { opacity: 0.6 }]}>
-                                <Text style={[styles.promoValueLarge, { color: promo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? '#10B981' : '#6366F1' }]}>
-                                    {promo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? `Giảm ${promo.giaTriGiam.toLocaleString()}đ` : `Giảm ${promo.giaTriGiam}% off*`}
-                                </Text>
-                                <Text style={styles.promoCodeStylized}>{promo.maCode}</Text>
-
-                                <View style={[styles.promoTypeBadge, { backgroundColor: promo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? '#ECFDF5' : '#F5F3FF' }]}>
-                                    <Text style={[styles.promoTypeText, { color: promo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? '#059669' : '#4F46E5' }]}>
-                                        {promo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? 'Tiền mặt' : 'Phần trăm'}
+                                <View style={[styles.couponRight, !active && { opacity: 0.6 }]}>
+                                    <Text style={[styles.promoValueLarge, { color: promo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? '#10B981' : '#6366F1' }]}>
+                                        {promo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? `Giảm ${promo.giaTriGiam.toLocaleString()}đ` : `Giảm ${promo.giaTriGiam}% off*`}
                                     </Text>
+                                    <Text style={styles.promoCodeStylized}>{promo.maCode}</Text>
+
+                                    <View style={[styles.promoTypeBadge, { backgroundColor: promo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? '#ECFDF5' : '#F5F3FF' }]}>
+                                        <Text style={[styles.promoTypeText, { color: promo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? '#059669' : '#4F46E5' }]}>
+                                            {promo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? 'Tiền mặt' : 'Phần trăm'}
+                                        </Text>
+                                    </View>
+
+                                    <View style={styles.promoDetailRow}>
+                                        <ClockIcon color="#94A3B8" stroke="#94A3B8" />
+                                        <Text style={styles.promoDetailText}>{active ? `Hết hạn: ${promo.ngayHetHan.substring(0, 10)}` : 'Hết hạn/Tạm dừng'}</Text>
+                                    </View>
+
+                                    <TouchableOpacity
+                                        style={styles.moreBtnPromo}
+                                        onPress={(e) => {
+                                            const { pageY, pageX } = e.nativeEvent;
+                                            setActionMenu({ y: pageY - 20, x: pageX - 100, data: promo });
+                                        }}
+                                    >
+                                        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                            <Circle cx="12" cy="5" r="2" fill="#94A3B8" />
+                                            <Circle cx="12" cy="12" r="2" fill="#94A3B8" />
+                                            <Circle cx="12" cy="19" r="2" fill="#94A3B8" />
+                                        </Svg>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={styles.promoStatusBtn}
+                                        onPress={() => togglePromoStatus(promo.idKhuyenMai)}
+                                    >
+                                        <View style={[styles.statusIndicator, { backgroundColor: active ? '#10B981' : '#94A3B8' }]} />
+                                    </TouchableOpacity>
                                 </View>
+                            </>
+                        );
 
-                                <View style={styles.promoDetailRow}>
-                                    <ClockIcon color="#94A3B8" stroke="#94A3B8" />
-                                    <Text style={styles.promoDetailText}>{active ? `Hết hạn: ${promo.ngayHetHan.substring(0, 10)}` : 'Hết hạn/Tạm dừng'}</Text>
-                                </View>
-
+                        return isTablet ? (
+                            <View key={promo.idKhuyenMai} style={tabletStyles.promoCardTablet}>
                                 <TouchableOpacity
-                                    style={styles.moreBtnPromo}
-                                    onPress={(e) => {
-                                        const { pageY, pageX } = e.nativeEvent;
-                                        setActionMenu({ y: pageY - 20, x: pageX - 100, data: promo });
-                                    }}
+                                    style={[styles.promoCard, { marginBottom: 0, width: '100%' }]}
+                                    activeOpacity={0.9}
+                                    onPress={() => setSelectedPromo(promo)}
                                 >
-                                    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                        <Circle cx="12" cy="5" r="2" fill="#94A3B8" />
-                                        <Circle cx="12" cy="12" r="2" fill="#94A3B8" />
-                                        <Circle cx="12" cy="19" r="2" fill="#94A3B8" />
-                                    </Svg>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={styles.promoStatusBtn}
-                                    onPress={() => togglePromoStatus(promo.idKhuyenMai)}
-                                >
-                                    <View style={[styles.statusIndicator, { backgroundColor: active ? '#10B981' : '#94A3B8' }]} />
+                                    {cardContent}
                                 </TouchableOpacity>
                             </View>
-                        </TouchableOpacity>
-                    );
-                })}
+                        ) : (
+                            <TouchableOpacity
+                                key={promo.idKhuyenMai}
+                                style={styles.promoCard}
+                                activeOpacity={0.9}
+                                onPress={() => setSelectedPromo(promo)}
+                            >
+                                {cardContent}
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
             </ScrollView>
 
             {/* Modal: Action Popover */}
@@ -316,69 +427,121 @@ export default function PromotionsTab({ setIsAnyModalOpen }) {
             {/* Modal: Promo Form */}
             <Modal visible={showPromoForm} transparent animationType="slide">
                 <View style={styles.detailOverlay}>
-                    <View style={styles.formCard}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>{isEditMode ? 'Chỉnh sửa mã' : 'Thêm mã mới'}</Text>
+                    <View style={[styles.formCard, isTablet && { width: '60%', maxWidth: 700, alignSelf: 'center', padding: 0, borderRadius: 32, overflow: 'hidden' }]}>
+                        <View style={{ backgroundColor: '#F8FAFC', padding: 24, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <View>
+                                    <Text style={{ fontSize: 22, fontWeight: '900', color: '#1E2939' }}>{isEditMode ? 'Chỉnh sửa mã' : 'Thêm mã mới'}</Text>
+                                    <Text style={{ fontSize: 13, color: '#94A3B8', fontWeight: '600', marginTop: 2 }}>Thiết lập chương trình khuyến mãi cho cửa hàng</Text>
+                                </View>
+                                <TouchableOpacity onPress={() => setShowPromoForm(false)} style={{ backgroundColor: '#FFFFFF', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' }}>
+                                    <CloseIcon />
+                                </TouchableOpacity>
+                            </View>
                         </View>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.inputTitle}>Mã khuyến mãi</Text>
-                            <TextInput
-                                style={styles.textInput}
-                                placeholder="VD: GIAM50K..."
-                                value={promoFormData.maCode}
-                                onChangeText={(val) => setPromoFormData({ ...promoFormData, maCode: val })}
-                            />
-                        </View>
-                        <View style={{ flexDirection: 'row', gap: 12 }}>
-                            <View style={[styles.inputGroup, { flex: 1 }]}>
-                                <Text style={styles.inputTitle}>Giá trị giảm</Text>
+                        
+                        <ScrollView style={{ padding: 24, maxHeight: 600 }} showsVerticalScrollIndicator={false}>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputTitle}>Mã khuyến mãi</Text>
                                 <TextInput
-                                    style={styles.textInput}
-                                    placeholder="50000"
-                                    keyboardType="numeric"
-                                    value={promoFormData.giaTriGiam}
-                                    onChangeText={(val) => setPromoFormData({ ...promoFormData, giaTriGiam: val })}
+                                    style={[styles.textInput, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 16, height: 52, paddingHorizontal: 16, fontSize: 16, fontWeight: '700' }]}
+                                    placeholder="VD: GIAM50K"
+                                    placeholderTextColor="#CBD5E1"
+                                    autoCapitalize="characters"
+                                    value={promoFormData.maCode}
+                                    onChangeText={(val) => setPromoFormData({ ...promoFormData, maCode: val })}
                                 />
                             </View>
-                            <View style={[styles.inputGroup, { flex: 1 }]}>
-                                <Text style={styles.inputTitle}>Đơn tối thiểu</Text>
-                                <TextInput
-                                    style={styles.textInput}
-                                    placeholder="200000"
-                                    keyboardType="numeric"
-                                    value={promoFormData.donToiThieu}
-                                    onChangeText={(val) => setPromoFormData({ ...promoFormData, donToiThieu: val })}
-                                />
+
+                            <View style={{ flexDirection: 'row', gap: 20 }}>
+                                <View style={[styles.inputGroup, { flex: 1 }]}>
+                                    <Text style={styles.inputTitle}>Giá trị giảm</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 16, height: 52, paddingHorizontal: 16 }}>
+                                        <TextInput
+                                            style={{ flex: 1, height: 52, fontSize: 16, fontWeight: '600', color: '#1E2939' }}
+                                            placeholder="50,000"
+                                            placeholderTextColor="#CBD5E1"
+                                            keyboardType="numeric"
+                                            value={promoFormData.giaTriGiam}
+                                            onChangeText={(val) => setPromoFormData({ ...promoFormData, giaTriGiam: val })}
+                                        />
+                                        <Text style={{ color: '#94A3B8', fontWeight: '800' }}>{promoFormData.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? 'VND' : '%'}</Text>
+                                    </View>
+                                </View>
+                                <View style={[styles.inputGroup, { flex: 1 }]}>
+                                    <Text style={styles.inputTitle}>Đơn tối thiểu</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 16, height: 52, paddingHorizontal: 16 }}>
+                                        <TextInput
+                                            style={{ flex: 1, height: 52, fontSize: 16, fontWeight: '600', color: '#1E2939' }}
+                                            placeholder="200,000"
+                                            placeholderTextColor="#CBD5E1"
+                                            keyboardType="numeric"
+                                            value={promoFormData.donToiThieu}
+                                            onChangeText={(val) => setPromoFormData({ ...promoFormData, donToiThieu: val })}
+                                        />
+                                        <Text style={{ color: '#94A3B8', fontWeight: '800' }}>VND</Text>
+                                    </View>
+                                </View>
                             </View>
-                        </View>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.inputTitle}>Loại khuyến mãi</Text>
-                            <View style={{ gap: 8 }}>
-                                <RadioItem label="Giảm tiền mặt (VND)" selected={promoFormData.loaiKhuyenMai === 'GIAM_TIEN_MAT'} onPress={() => setPromoFormData({ ...promoFormData, loaiKhuyenMai: 'GIAM_TIEN_MAT' })} />
-                                <RadioItem label="Giảm theo phần trăm (%)" selected={promoFormData.loaiKhuyenMai === 'GIAM_PHAN_TRAM'} onPress={() => setPromoFormData({ ...promoFormData, loaiKhuyenMai: 'GIAM_PHAN_TRAM' })} />
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputTitle}>Loại khuyến mãi</Text>
+                                <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
+                                    <TouchableOpacity 
+                                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: promoFormData.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? '#F0F9FF' : '#F8FAFC', padding: 14, borderRadius: 16, borderWidth: 2, borderColor: promoFormData.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? '#0EA5E9' : 'transparent' }}
+                                        onPress={() => setPromoFormData({ ...promoFormData, loaiKhuyenMai: 'GIAM_TIEN_MAT' })}
+                                    >
+                                        <View style={{ width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: promoFormData.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? '#0EA5E9' : '#D1D5DB', justifyContent: 'center', alignItems: 'center', marginRight: 10 }}>
+                                            {promoFormData.loaiKhuyenMai === 'GIAM_TIEN_MAT' && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#0EA5E9' }} />}
+                                        </View>
+                                        <Text style={{ fontWeight: '700', color: promoFormData.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? '#0C4A6E' : '#64748B' }}>Tiền mặt (VND)</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity 
+                                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: promoFormData.loaiKhuyenMai === 'GIAM_PHAN_TRAM' ? '#F5F3FF' : '#F8FAFC', padding: 14, borderRadius: 16, borderWidth: 2, borderColor: promoFormData.loaiKhuyenMai === 'GIAM_PHAN_TRAM' ? '#8B5CF6' : 'transparent' }}
+                                        onPress={() => setPromoFormData({ ...promoFormData, loaiKhuyenMai: 'GIAM_PHAN_TRAM' })}
+                                    >
+                                        <View style={{ width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: promoFormData.loaiKhuyenMai === 'GIAM_PHAN_TRAM' ? '#8B5CF6' : '#D1D5DB', justifyContent: 'center', alignItems: 'center', marginRight: 10 }}>
+                                            {promoFormData.loaiKhuyenMai === 'GIAM_PHAN_TRAM' && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#8B5CF6' }} />}
+                                        </View>
+                                        <Text style={{ fontWeight: '700', color: promoFormData.loaiKhuyenMai === 'GIAM_PHAN_TRAM' ? '#4C1D95' : '#64748B' }}>Phần trăm (%)</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-                        </View>
-                        <TouchableOpacity style={styles.switchRow} activeOpacity={0.8} onPress={() => setPromoFormData({ ...promoFormData, laGiamGiaSauThue: !promoFormData.laGiamGiaSauThue })}>
-                            <Text style={styles.switchLabel}>Giảm giá sau thuế</Text>
-                            <View style={[styles.filterOuterCircle, promoFormData.laGiamGiaSauThue && styles.filterOuterSelected]}>
-                                {promoFormData.laGiamGiaSauThue && <View style={styles.filterInnerCircle} />}
+
+                            <View style={{ flexDirection: 'row', gap: 20, marginBottom: 10 }}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.inputTitle}>Hạn sử dụng</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 16, height: 52, paddingHorizontal: 16 }}>
+                                        <TextInput
+                                            style={{ flex: 1, height: 52, fontSize: 16, fontWeight: '600', color: '#1E2939' }}
+                                            placeholder="2026-12-31"
+                                            placeholderTextColor="#CBD5E1"
+                                            value={promoFormData.ngayHetHan}
+                                            onChangeText={(val) => setPromoFormData({ ...promoFormData, ngayHetHan: val })}
+                                        />
+                                    </View>
+                                </View>
+                                <TouchableOpacity 
+                                    style={{ flex: 1, backgroundColor: '#F8FAFC', borderRadius: 16, padding: 12, marginTop: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#F1F5F9' }} 
+                                    activeOpacity={0.8} 
+                                    onPress={() => setPromoFormData({ ...promoFormData, laGiamGiaSauThue: !promoFormData.laGiamGiaSauThue })}
+                                >
+                                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#475569' }}>Giảm sau thuế</Text>
+                                    <View style={{ width: 44, height: 24, borderRadius: 12, backgroundColor: promoFormData.laGiamGiaSauThue ? '#10B981' : '#CBD5E1', padding: 2 }}>
+                                        <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFFFFF', alignSelf: promoFormData.laGiamGiaSauThue ? 'flex-end' : 'flex-start' }} />
+                                    </View>
+                                </TouchableOpacity>
                             </View>
-                        </TouchableOpacity>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.inputTitle}>Hạn sử dụng</Text>
-                            <TextInput
-                                style={styles.textInput}
-                                placeholder="YYYY-MM-DD"
-                                value={promoFormData.ngayHetHan}
-                                onChangeText={(val) => setPromoFormData({ ...promoFormData, ngayHetHan: val })}
-                            />
-                        </View>
-                        <View style={styles.actionBtnRow}>
-                            <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowPromoForm(false)}>
-                                <Text style={styles.cancelBtnText}>Hủy</Text>
+                        </ScrollView>
+
+                        <View style={{ padding: 24, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F1F5F9', flexDirection: 'row', gap: 16 }}>
+                            <TouchableOpacity style={{ flex: 1, height: 56, borderRadius: 16, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' }} onPress={() => setShowPromoForm(false)}>
+                                <Text style={{ color: '#64748B', fontSize: 16, fontWeight: '800' }}>Hủy bỏ</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.saveBtn} onPress={handleSavePromo}>
-                                <Text style={styles.saveBtnText}>Lưu mã</Text>
+                            <TouchableOpacity style={{ flex: 2, height: 56, borderRadius: 16, overflow: 'hidden' }} onPress={handleSavePromo}>
+                                <LinearGradient colors={['#8BA367', '#6B8743']} style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                                    <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '800' }}>{isEditMode ? 'Cập nhật khuyến mãi' : 'Tạo mã giảm giá'}</Text>
+                                </LinearGradient>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -388,46 +551,65 @@ export default function PromotionsTab({ setIsAnyModalOpen }) {
             {/* Modal: Promo Detail */}
             <Modal visible={!!selectedPromo} transparent animationType="fade">
                 <TouchableOpacity style={styles.detailOverlay} activeOpacity={1} onPress={() => setSelectedPromo(null)}>
-                    <View style={styles.formCard}>
+                    <View style={[styles.formCard, isTablet && { width: '50%', maxWidth: 500, alignSelf: 'center', padding: 0, borderRadius: 32, overflow: 'hidden' }]}>
                         {selectedPromo && (
-                            <>
-                                <View style={[styles.modalHeader, { marginBottom: 10 }]}>
-                                    <Text style={styles.modalTitle}>{selectedPromo.maCode}</Text>
-                                    <TouchableOpacity onPress={() => setSelectedPromo(null)}><CloseIcon /></TouchableOpacity>
+                            <View>
+                                {/* Header with Gradient */}
+                                <LinearGradient colors={['#8BA367', '#6B8743']} style={{ padding: 24, paddingBottom: 40 }}>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <View>
+                                            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '700', letterSpacing: 1, marginBottom: 4 }}>MÃ KHUYẾN MÃI</Text>
+                                            <Text style={{ color: '#FFFFFF', fontSize: 32, fontWeight: '900' }}>{selectedPromo.maCode}</Text>
+                                        </View>
+                                        <TouchableOpacity onPress={() => setSelectedPromo(null)} style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 14 }}>
+                                            <CloseIcon />
+                                        </TouchableOpacity>
+                                    </View>
+                                </LinearGradient>
+
+                                {/* Content */}
+                                <View style={{ padding: 24, marginTop: -20, backgroundColor: '#FFFFFF', borderRadius: 32 }}>
+                                    <View style={{ backgroundColor: selectedPromo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? '#ECFDF5' : '#F5F3FF', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, alignSelf: 'flex-start', marginBottom: 24 }}>
+                                        <Text style={{ color: selectedPromo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? '#059669' : '#4F46E5', fontWeight: '800', fontSize: 13 }}>
+                                            {selectedPromo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? 'GIẢM TIỀN MẶT' : 'GIẢM PHẦN TRĂM'}
+                                        </Text>
+                                    </View>
+
+                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 20 }}>
+                                        <View style={{ width: '45%' }}>
+                                            <Text style={styles.infoLabel}>Giá trị giảm</Text>
+                                            <Text style={[styles.infoValue, { fontSize: 20 }]}>{selectedPromo.giaTriGiam.toLocaleString()}{selectedPromo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? 'đ' : '%'}</Text>
+                                        </View>
+                                        <View style={{ width: '45%' }}>
+                                            <Text style={styles.infoLabel}>Đơn tối thiểu</Text>
+                                            <Text style={[styles.infoValue, { fontSize: 20 }]}>{selectedPromo.donToiThieu.toLocaleString()}đ</Text>
+                                        </View>
+                                        <View style={{ width: '45%', marginTop: 10 }}>
+                                            <Text style={styles.infoLabel}>Ngày bắt đầu</Text>
+                                            <Text style={styles.infoValue}>{selectedPromo.ngayBatDau.substring(0, 10)}</Text>
+                                        </View>
+                                        <View style={{ width: '45%', marginTop: 10 }}>
+                                            <Text style={styles.infoLabel}>Ngày hết hạn</Text>
+                                            <Text style={styles.infoValue}>{selectedPromo.ngayHetHan.substring(0, 10)}</Text>
+                                        </View>
+                                    </View>
+
+                                    <View style={{ borderTopWidth: 1, borderTopColor: '#F1F5F9', marginTop: 24, paddingTop: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <View>
+                                            <Text style={styles.infoLabel}>Áp dụng thuế</Text>
+                                            <Text style={[styles.infoValue, { fontSize: 14 }]}>{selectedPromo.laGiamGiaSauThue ? 'Giảm sau khi tính thuế' : 'Giảm trước khi tính thuế'}</Text>
+                                        </View>
+                                        <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: isPromoActive(selectedPromo) ? '#10B981' : '#94A3B8' }} />
+                                    </View>
                                 </View>
-                                <Text style={{ color: '#8BA367', fontWeight: '800', marginBottom: 20 }}>
-                                    {selectedPromo.loaiKhuyenMai === 'GIAM_TIEN_MAT' ? 'GIẢM TIỀN MẶT' : 'GIẢM PHẦN TRĂM'}
-                                </Text>
-                                <View style={styles.resGrid}>
-                                    <View style={styles.resItem}>
-                                        <Text style={styles.infoLabel}>Giá trị giảm</Text>
-                                        <Text style={styles.infoValue}>{selectedPromo.giaTriGiam.toLocaleString()}đ</Text>
-                                    </View>
-                                    <View style={styles.resItem}>
-                                        <Text style={styles.infoLabel}>Đơn tối thiểu</Text>
-                                        <Text style={styles.infoValue}>{selectedPromo.donToiThieu.toLocaleString()}đ</Text>
-                                    </View>
-                                    <View style={styles.resItem}>
-                                        <Text style={styles.infoLabel}>Ngày bắt đầu</Text>
-                                        <Text style={styles.infoValue}>{selectedPromo.ngayBatDau.substring(0, 10)}</Text>
-                                    </View>
-                                    <View style={styles.resItem}>
-                                        <Text style={styles.infoLabel}>Ngày hết hạn</Text>
-                                        <Text style={styles.infoValue}>{selectedPromo.ngayHetHan.substring(0, 10)}</Text>
-                                    </View>
-                                </View>
-                                <View style={[styles.infoRow, { borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 15 }]}>
-                                    <Text style={styles.infoLabel}>Loại thuế áp dụng</Text>
-                                    <Text style={styles.infoValue}>{selectedPromo.laGiamGiaSauThue ? 'Giảm sau thuế' : 'Giảm trước thuế'}</Text>
-                                </View>
-                            </>
+                            </View>
                         )}
                     </View>
                 </TouchableOpacity>
             </Modal>
 
             {/* FAB */}
-            {!isLocalModalOpen && (
+            {!isTablet && !isLocalModalOpen && (
                 <TouchableOpacity style={styles.fabBtn} activeOpacity={0.8} onPress={onOpenAddPromo}>
                     <PlusIcon />
                     <Text style={styles.fabText}>Thêm mã mới</Text>
