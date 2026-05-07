@@ -164,10 +164,16 @@ const InvoicesTab = ({ onModalStateChange }) => {
         dotIndicator: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#E2E8F0', marginLeft: 15 },
         dotActive: { backgroundColor: '#8BA367' },
 
-        statsRow: { flexDirection: 'row', gap: 20, marginBottom: 32 },
+        statsRow: { 
+            flexDirection: 'row', 
+            gap: 20, 
+            marginBottom: 32, 
+            paddingHorizontal: 12, // Đẩy các nút vào trong để hiện viền/bóng
+            paddingTop: 8 // Không gian cho bóng đổ phía trên
+        },
         statCard: {
             flex: 1, backgroundColor: '#FFFFFF', padding: 24, borderRadius: 24,
-            shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 4,
+            shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 5,
             borderWidth: 1, borderColor: '#F1F5F9'
         },
         statValue: { fontSize: 26, fontWeight: '900', color: '#1E293B', marginTop: 12 },
@@ -286,12 +292,30 @@ const InvoicesTab = ({ onModalStateChange }) => {
                     keyExtractor={item => item.title}
                     contentContainerStyle={{ paddingVertical: 16 }}
                     showsVerticalScrollIndicator={false}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity style={[tabletStyles.dateCard, activeDate === item.title && tabletStyles.dateCardActive]} onPress={() => { setActiveDate(item.title); setSelectedInvoice(null); }}>
-                            <View style={{ flex: 1 }}><Text style={[tabletStyles.dateTitle, activeDate === item.title && { color: '#1B2A15' }]}>{item.title}</Text><Text style={tabletStyles.dateCount}>{item.data.length} đơn</Text></View>
-                            <DotIndicator active={activeDate === item.title} />
-                        </TouchableOpacity>
-                    )}
+                    renderItem={({ item }) => {
+                        const isActive = activeDate === item.title;
+                        return (
+                            <TouchableOpacity 
+                                style={[tabletStyles.dateCard, isActive && { borderWidth: 0, elevation: 4 }]} 
+                                onPress={() => { setActiveDate(item.title); setSelectedInvoice(null); }}
+                            >
+                                {isActive && (
+                                    <LinearGradient
+                                        colors={['#F0FDF4', '#DCFCE7']}
+                                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                                        style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
+                                    />
+                                )}
+                                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', zIndex: 1 }}>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={[tabletStyles.dateTitle, isActive && { color: '#14532D' }]}>{item.title}</Text>
+                                        <Text style={[tabletStyles.dateCount, isActive && { color: '#15803D' }]}>{item.data.length} đơn</Text>
+                                    </View>
+                                    <DotIndicator active={isActive} />
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    }}
                 />
             </View>
 
@@ -315,9 +339,36 @@ const InvoicesTab = ({ onModalStateChange }) => {
                         </View>
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
                             <View style={tabletStyles.statsRow}>
-                                <View style={tabletStyles.statCard}><ChartBarIcon color="#8BA367" /><Text style={tabletStyles.statValue}>{dayStats.revenue.toLocaleString()}đ</Text><Text style={tabletStyles.statLabel}>Doanh thu</Text></View>
-                                <View style={tabletStyles.statCard}><ChartPieIcon color="#3B82F6" /><Text style={tabletStyles.statValue}>{dayStats.count}</Text><Text style={tabletStyles.statLabel}>Tổng đơn</Text></View>
-                                <View style={tabletStyles.statCard}><CheckCircleIcon color="#10B981" /><Text style={tabletStyles.statValue}>{dayStats.success}</Text><Text style={tabletStyles.statLabel}>Hoàn tất</Text></View>
+                                <View style={[tabletStyles.statCard, { padding: 0 }]}>
+                                    <LinearGradient 
+                                        colors={['#F0FDF4', '#DCFCE7']} 
+                                        style={{ flex: 1, padding: 24, borderRadius: 24 }}
+                                    >
+                                        <ChartBarIcon color="#166534" />
+                                        <Text style={[tabletStyles.statValue, { color: '#14532D' }]}>{dayStats.revenue.toLocaleString()}đ</Text>
+                                        <Text style={[tabletStyles.statLabel, { color: '#15803D' }]}>Doanh thu</Text>
+                                    </LinearGradient>
+                                </View>
+                                <View style={[tabletStyles.statCard, { padding: 0 }]}>
+                                    <LinearGradient 
+                                        colors={['#F0FDF4', '#DCFCE7']} 
+                                        style={{ flex: 1, padding: 24, borderRadius: 24 }}
+                                    >
+                                        <ChartPieIcon color="#166534" />
+                                        <Text style={[tabletStyles.statValue, { color: '#14532D' }]}>{dayStats.count}</Text>
+                                        <Text style={[tabletStyles.statLabel, { color: '#15803D' }]}>Tổng đơn</Text>
+                                    </LinearGradient>
+                                </View>
+                                <View style={[tabletStyles.statCard, { padding: 0 }]}>
+                                    <LinearGradient 
+                                        colors={['#F0FDF4', '#DCFCE7']} 
+                                        style={{ flex: 1, padding: 24, borderRadius: 24 }}
+                                    >
+                                        <CheckCircleIcon color="#166534" />
+                                        <Text style={[tabletStyles.statValue, { color: '#14532D' }]}>{dayStats.success}</Text>
+                                        <Text style={[tabletStyles.statLabel, { color: '#15803D' }]}>Hoàn tất</Text>
+                                    </LinearGradient>
+                                </View>
                             </View>
                             <Text style={{ fontSize: 18, fontWeight: '900', color: '#1E293B', marginBottom: 20, marginLeft: 4 }}>DANH SÁCH GIAO DỊCH</Text>
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>

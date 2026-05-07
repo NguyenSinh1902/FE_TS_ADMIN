@@ -105,11 +105,11 @@ const Sidebar = ({
         >
           <View style={styles.avatarWrap}>
             {currentUser?.hinhAnh ? (
-                <Image source={{ uri: currentUser.hinhAnh }} style={{ width: 44, height: 44, borderRadius: 22 }} />
+              <Image source={{ uri: currentUser.hinhAnh }} style={{ width: 44, height: 44, borderRadius: 22 }} />
             ) : (
-                <Text style={styles.avatarInitials}>
-                  {currentUser?.hoTen ? currentUser.hoTen.split(' ').pop().substring(0, 2).toUpperCase() : 'AD'}
-                </Text>
+              <Text style={styles.avatarInitials}>
+                {currentUser?.hoTen ? currentUser.hoTen.split(' ').pop().substring(0, 2).toUpperCase() : 'AD'}
+              </Text>
             )}
           </View>
           {!isCollapsed && (
@@ -121,10 +121,10 @@ const Sidebar = ({
         </Pressable>
       </View>
 
-      <ProfileModal 
-        visible={isProfileVisible} 
-        onClose={() => setIsProfileVisible(false)} 
-        onLogout={handleLogout} 
+      <ProfileModal
+        visible={isProfileVisible}
+        onClose={() => setIsProfileVisible(false)}
+        onLogout={handleLogout}
       />
     </Animated.View>
   );

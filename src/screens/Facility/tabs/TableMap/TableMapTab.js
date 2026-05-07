@@ -154,7 +154,7 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
                 tenBan: t.tenBan,
                 sucChua: t.sucChua,
                 tinhTrangBan: t.tinhTrangBan
-            }));
+            })).sort((a, b) => a.id - b.id);
             
             setLocalTables(mappedTables);
             setReservations(resvRes || []);
