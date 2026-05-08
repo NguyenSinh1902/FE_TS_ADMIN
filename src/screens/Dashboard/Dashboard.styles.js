@@ -209,9 +209,10 @@ export default StyleSheet.create({
     justifyContent: 'flex-end',
   },
   xAxisLabel: {
-    color: '#6B7280',
+    color: '#1B2A15',
     fontSize: 10,
     marginTop: 10,
+    fontWeight: '700',
   },
   barCol: {
     width: 25,

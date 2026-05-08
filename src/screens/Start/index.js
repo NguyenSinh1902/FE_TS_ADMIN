@@ -109,6 +109,13 @@ export default function Start({ onNavigate }) {
       });
 
       if (response && response.success && response.token) {
+        const userRole = response.user?.vaiTro;
+        if (userRole === 'PHUC_VU' || userRole === 'THU_NGAN') {
+          setErrorMessage('Tài khoản không có quyền truy cập hệ thống quản trị');
+          setIsLoading(false);
+          return;
+        }
+
         // Save token and user info
         await safeAsyncStorage.setItem('token', response.token);
         if (response.user) {

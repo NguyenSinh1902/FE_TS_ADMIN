@@ -212,7 +212,9 @@ export default function Dashboard({ onNavigate, params }) {
               colors={['rgba(139, 163, 103, 0.80)', 'rgba(139, 163, 103, 0.20)']}
               style={[styles.barCol, { height: item.height }]}
             />
-            <Text style={styles.xAxisLabel}>{item.label}</Text>
+            <Text style={styles.xAxisLabel}>
+              {index % 4 === 0 ? (item.label.includes(':') ? `${item.label.split(':')[0]}h` : item.label) : ''}
+            </Text>
           </View>
         ))}
       </View>
@@ -300,14 +302,16 @@ export default function Dashboard({ onNavigate, params }) {
     const maxOrders = Math.max(...hours.map(h => h.orders), 1);
 
     return (
-      <View style={{ width: '100%', height: 120, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8 }}>
+      <View style={{ width: '100%', height: 140, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8, paddingBottom: 20 }}>
         {hours.map((item, index) => {
           const heightPercent = (item.orders / maxOrders) * 100;
+          const hourNum = parseInt(item.hour.split(':')[0]);
+          const showLabel = hourNum % 6 === 0;
           return (
             <View key={index} style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={{ fontSize: 10, color: '#6A7282', marginBottom: 4, fontWeight: '600' }}>{item.orders > 0 ? item.orders : ''}</Text>
-              <View style={{ width: '60%', maxWidth: 16, minHeight: 4, height: `${Math.max(heightPercent, 2)}%`, backgroundColor: item.orders === maxOrders && item.orders > 0 ? '#F59E0B' : '#8BA367', borderTopLeftRadius: 4, borderTopRightRadius: 4 }} />
-              <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 6 }}>{item.hour.split(':')[0]}h</Text>
+              <Text style={{ fontSize: 9, color: '#6A7282', marginBottom: 3, fontWeight: '600' }}>{item.orders > 0 ? item.orders : ''}</Text>
+              <View style={{ width: '60%', maxWidth: 14, minHeight: 4, height: `${Math.max(heightPercent, 2)}%`, backgroundColor: item.orders === maxOrders && item.orders > 0 ? '#F59E0B' : '#8BA367', borderTopLeftRadius: 4, borderTopRightRadius: 4 }} />
+              <Text style={{ fontSize: 9, color: '#6A7282', marginTop: 4, fontWeight: '600' }}>{showLabel ? hourNum : ' '}</Text>
             </View>
           );
         })}
@@ -321,7 +325,7 @@ export default function Dashboard({ onNavigate, params }) {
       {data && data.length > 0 ? (
         data.map((item, index) => (
           <View key={index} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
-            <Text style={{ fontSize: 14, color: '#1E293B', flex: 1 }} numberOfLines={1}>{index + 1}. {item.tenMon}</Text>
+            <Text style={{ fontSize: 14, color: '#1E293B', flex: 1 }} numberOfLines={1}>{index + 1}. {item.tenSanPham}</Text>
             <Text style={{ fontSize: 14, fontWeight: '600', color: '#8BA367' }}>{item.soLuong} phần</Text>
           </View>
         ))
@@ -625,7 +629,9 @@ export default function Dashboard({ onNavigate, params }) {
                       colors={['rgba(139, 163, 103, 0.80)', 'rgba(139, 163, 103, 0.20)']}
                       style={[styles.barCol, { height: item.height }]}
                     />
-                    <Text style={styles.xAxisLabel}>{item.label}</Text>
+                    <Text style={styles.xAxisLabel}>
+                      {index % 4 === 0 ? (item.label.includes(':') ? `${item.label.split(':')[0]}h` : item.label) : ''}
+                    </Text>
                   </View>
                 ))}
               </View>

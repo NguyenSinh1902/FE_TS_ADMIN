@@ -4,6 +4,7 @@ import Svg, { Circle, Rect, Path } from 'react-native-svg';
 import LinearGradient from 'react-native-linear-gradient';
 import styles from '../../Facility.styles';
 import tableApi from '../../../../api/tableApi';
+import invoiceApi from '../../../../api/invoiceApi';
 import reservationApi from '../../../../api/reservationApi';
 import { RefreshControl, ActivityIndicator, Alert } from 'react-native';
 
@@ -126,6 +127,7 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
 
     const [localTables, setLocalTables] = useState([]);
     const [reservations, setReservations] = useState([]);
+    const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     
@@ -144,9 +146,10 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
     const fetchAllData = async () => {
         try {
             setLoading(true);
-            const [tablesRes, resvRes] = await Promise.all([
+            const [tablesRes, resvRes, invoicesRes] = await Promise.all([
                 tableApi.getAll(),
-                reservationApi.getAll()
+                reservationApi.getAll(),
+                invoiceApi.getAll()
             ]);
             
             const mappedTables = (tablesRes || []).map(t => ({
@@ -158,6 +161,7 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
             
             setLocalTables(mappedTables);
             setReservations(resvRes || []);
+            setInvoices(invoicesRes || []);
         } catch (error) {
             console.error('Fetch facility data error:', error);
         } finally {
@@ -179,6 +183,16 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
         return reservations.find(r => 
             (r.trangThaiDat === 'DA_DEN' || r.trangThaiDat === 'CHO_DEN') && 
             r.danhSachBan?.some(b => b.idBan === banId)
+        );
+    };
+
+    const getTableInvoice = (tenBan) => {
+        // Tìm hóa đơn active (chưa thanh toán/hủy) của bàn này
+        const activeStatuses = ['CHO_XAC_NHAN', 'DANG_CHUAN_BI', 'DA_HOAN_THANH'];
+        return invoices.find(inv => 
+            inv.loaiDonHang === 'TAI_BAN' &&
+            activeStatuses.includes(inv.trangThai) &&
+            inv.danhSachTenBan?.includes(tenBan)
         );
     };
 
@@ -497,12 +511,16 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
                                             <View style={[tabletStyles.cardFooter, { marginLeft: 10 }]}>
                                                 <View style={[tabletStyles.statusBadge, { backgroundColor: badgeBgColor, flexDirection: 'row', alignItems: 'center' }]}>
                                                     <Text style={[tabletStyles.statusText, { color: textColor }]}>{statusLabel}</Text>
-                                                    {table.tinhTrangBan === 'CO_KHACH' && resv && (
-                                                        <>
-                                                            <Text style={{ color: textColor, marginHorizontal: 4 }}>•</Text>
-                                                            <LiveTimer startTime={resv.thoiGianDat} textStyle={{ fontSize: 12, fontWeight: '700', color: textColor }} />
-                                                        </>
-                                                    )}
+                                                    {table.tinhTrangBan === 'CO_KHACH' && (() => {
+                                                        const inv = getTableInvoice(table.tenBan);
+                                                        const timerStart = inv?.thoiGianTao || resv?.thoiGianDat;
+                                                        return timerStart ? (
+                                                            <>
+                                                                <Text style={{ color: textColor, marginHorizontal: 4 }}>•</Text>
+                                                                <LiveTimer startTime={timerStart} textStyle={{ fontSize: 12, fontWeight: '700', color: textColor }} />
+                                                            </>
+                                                        ) : null;
+                                                    })()}
                                                 </View>
                                                 {table.tinhTrangBan === 'CO_KHACH' && (
                                                     <ReceiptIcon color="#9CA3AF" />
@@ -615,7 +633,7 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
                                             {selectedTable.tinhTrangBan === 'CO_KHACH' && (
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF2F2', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, gap: 6 }}>
                                                     <ClockIcon color="#EF4444" stroke="#EF4444" />
-                                                    <LiveTimer startTime={getTableReservation(selectedTable.id).thoiGianDat} textStyle={{ color: '#EF4444', fontWeight: '700', fontSize: 14 }} />
+                                                    <LiveTimer startTime={getTableInvoice(selectedTable.tenBan)?.thoiGianTao || getTableReservation(selectedTable.id)?.thoiGianDat} textStyle={{ color: '#EF4444', fontWeight: '700', fontSize: 14 }} />
                                                 </View>
                                             )}
                                         </View>

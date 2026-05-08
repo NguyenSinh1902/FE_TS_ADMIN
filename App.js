@@ -27,9 +27,17 @@ const App = () => {
   const checkLoginSession = async () => {
     try {
       const token = await safeAsyncStorage.getItem('token');
-      if (token) {
+      const userStr = await safeAsyncStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+
+      if (token && user && user.vaiTro !== 'PHUC_VU' && user.vaiTro !== 'THU_NGAN') {
         setInitialRoute('Dashboard');
       } else {
+        // Nếu có token nhưng vai trò không hợp lệ, xóa session
+        if (token) {
+          await safeAsyncStorage.removeItem('token');
+          await safeAsyncStorage.removeItem('user');
+        }
         setInitialRoute('Start');
       }
     } catch (e) {
