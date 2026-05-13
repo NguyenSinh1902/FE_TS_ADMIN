@@ -32,22 +32,22 @@ const Sidebar = ({
       onNavigate('Start', { reset: true });
     }
   };
-  const renderNavItem = (route, label, icon) => {
-    const isActive = activeRoute === route;
+  const renderNavItem = (route, label, icon, navParams) => {
+    const isActive = activeRoute === route && (!navParams || activeRoute === 'Dashboard');
     return (
       <Pressable
         style={[
           styles.tabletNavItem,
-          isActive && styles.tabletNavItemActive,
+          isActive && !navParams && styles.tabletNavItemActive,
           isCollapsed && styles.tabletNavItemCollapsed
         ]}
-        onPress={() => onNavigate(route)}
+        onPress={() => onNavigate(route, navParams)}
       >
         <View style={styles.tabletNavIconWrap}>
           <Text style={styles.tabletNavIcon}>{icon}</Text>
         </View>
         {!isCollapsed && (
-          <Text style={isActive ? styles.tabletNavLabelActive : styles.tabletNavLabel}>
+          <Text style={isActive && !navParams ? styles.tabletNavLabelActive : styles.tabletNavLabel}>
             {label}
           </Text>
         )}
@@ -91,6 +91,7 @@ const Sidebar = ({
       {/* 2. Main Navigation Card */}
       <View style={[styles.tabletNavContainer, isCollapsed && styles.tabletNavContainerCollapsed]}>
         {renderNavItem('Dashboard', 'Tổng quan', '🏠')}
+        {renderNavItem('AIHistory', 'Lịch sử AI', '✨')}
         {renderNavItem('StaffManagement', 'Nhân viên', '👥')}
         {renderNavItem('Menu', 'Thực đơn', '🍵')}
         {renderNavItem('Facility', 'Cơ sở vật chất', '🏢')}

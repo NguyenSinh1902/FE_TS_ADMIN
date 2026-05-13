@@ -28,6 +28,7 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
     // Form states
     const [formTaxName, setFormTaxName] = useState('');
     const [formTaxValue, setFormTaxValue] = useState('');
+    const [formTaxType, setFormTaxType] = useState('PHAN_TRAM'); // PHAN_TRAM | TIEN_MAT
     const [formTaxIsDefault, setFormTaxIsDefault] = useState(false);
 
     const [taxes, setTaxes] = useState([]);
@@ -56,18 +57,29 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
         fetchTaxes();
     };
 
+    const formatCurrency = (val) => {
+        return new Intl.NumberFormat('vi-VN').format(val) + 'đ';
+    };
+
     const openTaxModal = (tax = null) => {
         setSelectedTax(tax);
         setFormTaxName(tax ? tax.tenThuePhi : '');
-        setFormTaxValue(tax ? (tax.giaTri * 100).toString() : '');
+        setFormTaxValue(tax ? tax.giaTri.toString() : '');
+        setFormTaxType(tax ? tax.loaiGiaTri : 'PHAN_TRAM');
         setFormTaxIsDefault(tax ? tax.laMacDinh : false);
         setShowTaxModal(true);
     };
 
     const handleSaveTax = async () => {
+        if (!formTaxName || !formTaxValue) {
+            Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin');
+            return;
+        }
+
         const payload = {
             tenThuePhi: formTaxName,
-            giaTri: parseFloat(formTaxValue) / 100,
+            giaTri: parseFloat(formTaxValue),
+            loaiGiaTri: formTaxType,
             laMacDinh: formTaxIsDefault
         };
 
@@ -143,95 +155,127 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
             flexDirection: 'row',
             alignItems: 'center',
             backgroundColor: '#FFFFFF',
-            height: 52,
-            borderRadius: 16,
+            height: 48,
+            borderRadius: 14,
             paddingHorizontal: 16,
             shadowColor: '#8BA367', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 4,
             borderWidth: 1, borderColor: 'rgba(139, 163, 103, 0.1)'
         },
         filterBtn: {
-            width: 52,
-            height: 52,
+            width: 48,
+            height: 48,
             backgroundColor: '#FFFFFF',
-            borderRadius: 16,
+            borderRadius: 14,
             justifyContent: 'center',
             alignItems: 'center',
             shadowColor: '#8BA367', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 4,
             borderWidth: 1, borderColor: 'rgba(139, 163, 103, 0.1)'
         },
         addBtnGradient: { borderRadius: 24, overflow: 'hidden', shadowColor: '#8BA367', shadowOpacity: 0.3, shadowRadius: 10, elevation: 8 },
-        addBtnInner: { paddingHorizontal: 24, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
-        addBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+        addBtnInner: { paddingHorizontal: 24, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
+        addBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
         
         card: {
             flex: 1,
             maxWidth: '48%',
             backgroundColor: '#FFFFFF',
-            borderRadius: 24,
-            margin: 10,
-            padding: 24,
-            shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.04, shadowRadius: 15, elevation: 4,
-            overflow: 'hidden'
+            borderRadius: 20,
+            margin: 8,
+            padding: 20,
+            shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 3,
+            overflow: 'hidden',
+            borderWidth: 1, borderColor: '#F1F5F9'
         },
         cardDefault: {
             backgroundColor: '#F7FAF5',
             borderWidth: 1.5,
-            borderColor: 'rgba(139, 163, 103, 0.2)',
+            borderColor: 'rgba(139, 163, 103, 0.25)',
             shadowColor: '#8BA367', shadowOpacity: 0.08
         },
-        cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-        iconContainer: { width: 48, height: 48, borderRadius: 16, backgroundColor: 'rgba(139, 163, 103, 0.08)', justifyContent: 'center', alignItems: 'center' },
-        taxName: { fontSize: 18, fontWeight: '800', color: '#1E293B', marginBottom: 4 },
-        taxValue: { fontSize: 36, fontWeight: '900', color: '#8BA367', letterSpacing: -1 },
+        cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+        iconContainer: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(139, 163, 103, 0.08)', justifyContent: 'center', alignItems: 'center' },
+        taxName: { fontSize: 16, fontWeight: '800', color: '#1E293B', marginBottom: 2 },
+        taxValue: { fontSize: 28, fontWeight: '900', color: '#8BA367', letterSpacing: -0.5 },
         badge: { 
             backgroundColor: '#8BA367', 
-            paddingHorizontal: 12, 
-            paddingVertical: 5, 
-            borderRadius: 10,
+            paddingHorizontal: 10, 
+            paddingVertical: 4, 
+            borderRadius: 8,
+            marginLeft: 6
         },
-        badgeText: { fontSize: 10, fontWeight: '900', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.5 },
+        badgeText: { fontSize: 9, fontWeight: '900', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.5 },
         optionalBadge: {
             backgroundColor: 'rgba(71, 85, 105, 0.08)',
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            borderRadius: 8
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 6,
+            marginLeft: 6
         },
-        optionalBadgeText: { fontSize: 10, fontWeight: '800', color: '#64748B', textTransform: 'uppercase' }
+        optionalBadgeText: { fontSize: 9, fontWeight: '800', color: '#64748B', textTransform: 'uppercase' },
+        typeBadge: {
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 6,
+            borderWidth: 1,
+        },
+        typeBadgeText: { fontSize: 9, fontWeight: '800' }
     });
 
     const renderTabletItem = ({ item }) => (
         <View style={[tabletStyles.card, item.laMacDinh && tabletStyles.cardDefault]}>
             {/* Corner Decoration for Default */}
             {item.laMacDinh && (
-                <View style={{ position: 'absolute', top: -10, right: -10 }}>
-                    <TeaLeafIcon size={60} opacity={0.06} />
+                <View style={{ position: 'absolute', top: -5, right: -5 }}>
+                    <TeaLeafIcon size={50} opacity={0.08} />
                 </View>
             )}
 
             <View style={tabletStyles.cardHeader}>
                 <View style={[tabletStyles.iconContainer, !item.laMacDinh && { backgroundColor: 'rgba(99, 102, 241, 0.08)' }]}>
-                    <TaxIcon color={item.laMacDinh ? '#8BA367' : '#6366F1'} />
+                    <TaxIcon color={item.laMacDinh ? '#8BA367' : '#6366F1'} size={20} />
                 </View>
                 <TouchableOpacity onPress={() => setActivePopId(activePopId === item.idThuePhi ? null : item.idThuePhi)}>
-                    <Text style={{ fontSize: 24, color: '#94A3B8', fontWeight: '900', padding: 6 }}>•••</Text>
+                    <Text style={{ fontSize: 20, color: '#94A3B8', fontWeight: '900', padding: 4 }}>•••</Text>
                 </TouchableOpacity>
                 {activePopId === item.idThuePhi && (
-                    <View style={[styles.taxPopup, { top: 45, right: 0, borderWidth: 0, shadowOpacity: 0.15, borderRadius: 16 }]}>
+                    <View style={[styles.taxPopup, { top: 40, right: 0, borderWidth: 1, borderColor: '#F1F5F9', shadowOpacity: 0.1, borderRadius: 12 }]}>
                         <TouchableOpacity style={styles.taxPopupItem} onPress={() => { openTaxModal(item); setActivePopId(null); }}><Text style={styles.taxPopupText}>Chỉnh sửa</Text></TouchableOpacity>
                         <TouchableOpacity style={[styles.taxPopupItem, { borderBottomWidth: 0 }]} onPress={() => handleDeleteTax(item.idThuePhi)}><Text style={[styles.taxPopupText, { color: '#EF4444' }]}>Xóa</Text></TouchableOpacity>
                     </View>
                 )}
             </View>
             
-            <View style={{ flex: 1, justifyContent: 'center' }}>
-                <Text style={tabletStyles.taxName}>{item.tenThuePhi}</Text>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 10 }}>
-                    <Text style={[tabletStyles.taxValue, !item.laMacDinh && { color: '#6366F1' }]}>{(item.giaTri * 100).toFixed(0)}%</Text>
-                    {item.laMacDinh ? (
-                        <View style={tabletStyles.badge}><Text style={tabletStyles.badgeText}>MẶC ĐỊNH</Text></View>
-                    ) : (
-                        <View style={tabletStyles.optionalBadge}><Text style={tabletStyles.optionalBadgeText}>Tùy chọn</Text></View>
-                    )}
+            <View style={{ flex: 1 }}>
+                <Text style={tabletStyles.taxName} numberOfLines={1}>{item.tenThuePhi}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 4 }}>
+                    <Text style={[tabletStyles.taxValue, !item.laMacDinh && { color: '#6366F1' }]}>
+                        {item.loaiGiaTri === 'PHAN_TRAM' ? `${item.giaTri}%` : formatCurrency(item.giaTri)}
+                    </Text>
+                    
+                    <View style={{ flexDirection: 'row' }}>
+                        {/* Type Tag */}
+                        <View style={[
+                            tabletStyles.typeBadge, 
+                            { 
+                                backgroundColor: item.loaiGiaTri === 'PHAN_TRAM' ? 'rgba(16, 185, 129, 0.05)' : 'rgba(99, 102, 241, 0.05)',
+                                borderColor: item.loaiGiaTri === 'PHAN_TRAM' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(99, 102, 241, 0.2)'
+                            }
+                        ]}>
+                            <Text style={[
+                                tabletStyles.typeBadgeText, 
+                                { color: item.loaiGiaTri === 'PHAN_TRAM' ? '#10B981' : '#6366F1' }
+                            ]}>
+                                {item.loaiGiaTri === 'PHAN_TRAM' ? 'Phần trăm' : 'Tiền mặt'}
+                            </Text>
+                        </View>
+
+                        {/* Default/Optional Tag */}
+                        {item.laMacDinh ? (
+                            <View style={tabletStyles.badge}><Text style={tabletStyles.badgeText}>MẶC ĐỊNH</Text></View>
+                        ) : (
+                            <View style={tabletStyles.optionalBadge}><Text style={tabletStyles.optionalBadgeText}>Tùy chọn</Text></View>
+                        )}
+                    </View>
                 </View>
             </View>
         </View>
@@ -258,7 +302,7 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
                         <View style={tabletStyles.searchBox}>
                             <SearchIcon />
                             <TextInput 
-                                style={[styles.searchInput, { fontSize: 16, backgroundColor: 'transparent', borderWidth: 0 }]} 
+                                style={[styles.searchInput, { fontSize: 15, backgroundColor: 'transparent', borderWidth: 0 }]} 
                                 placeholder="Tìm tên thuế, phí..."
                                 placeholderTextColor="#9CA3AF" 
                                 value={searchQuery} 
@@ -277,7 +321,7 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
                             style={tabletStyles.addBtnGradient}
                         >
                             <View style={tabletStyles.addBtnInner}>
-                                <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                                     <Path d="M12 5V19M5 12H19" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" />
                                 </Svg>
                                 <Text style={tabletStyles.addBtnText}>Thêm thuế/phí mới</Text>
@@ -346,7 +390,15 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
                                 </View>
                                 <Text style={styles.taxNameText} numberOfLines={1}>{tax.tenThuePhi}</Text>
                                 <View style={[styles.taxValueRow, { justifyContent: 'space-between', width: '100%' }]}>
-                                    <Text style={[styles.taxPercentText, { color: tax.laMacDinh ? '#8BA367' : '#6366F1' }]}>{(tax.giaTri * 100).toFixed(0)}%</Text>
+                                    <View>
+                                        <Text style={[styles.taxPercentText, { color: tax.laMacDinh ? '#8BA367' : '#6366F1' }]}>
+                                            {tax.loaiGiaTri === 'PHAN_TRAM' ? `${tax.giaTri}%` : formatCurrency(tax.giaTri)}
+                                        </Text>
+                                        {/* Mobile Type Label */}
+                                        <Text style={{ fontSize: 9, color: '#94A3B8', fontWeight: '700', marginTop: 2 }}>
+                                            {tax.loaiGiaTri === 'PHAN_TRAM' ? 'PHẦN TRĂM' : 'TIỀN MẶT'}
+                                        </Text>
+                                    </View>
                                     {tax.laMacDinh && (
                                         <View style={styles.defaultBadge}><Text style={styles.defaultBadgeText}>Mặc định</Text></View>
                                     )}
@@ -386,8 +438,26 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
                         <View style={{ paddingHorizontal: 4 }}>
                             <Text style={styles.inputLabel}>Tên thuế/phí</Text>
                             <TextInput style={styles.formInput} placeholder="Ví dụ: VAT 8%" value={formTaxName} onChangeText={setFormTaxName} />
-                            <Text style={styles.inputLabel}>Giá trị (%)</Text>
-                            <TextInput style={styles.formInput} placeholder="Ví dụ: 8" keyboardType="numeric" value={formTaxValue} onChangeText={setFormTaxValue} />
+                            
+                            <Text style={styles.inputLabel}>Loại giá trị</Text>
+                            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+                                <TouchableOpacity 
+                                    style={[{ flex: 1, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center' }, formTaxType === 'PHAN_TRAM' && { backgroundColor: '#F0FDF4', borderColor: '#8BA367' }]}
+                                    onPress={() => setFormTaxType('PHAN_TRAM')}
+                                >
+                                    <Text style={[{ fontSize: 14, fontWeight: '700', color: '#64748B' }, formTaxType === 'PHAN_TRAM' && { color: '#8BA367' }]}>Phần trăm (%)</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                    style={[{ flex: 1, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center' }, formTaxType === 'TIEN_MAT' && { backgroundColor: '#F0FDF4', borderColor: '#8BA367' }]}
+                                    onPress={() => setFormTaxType('TIEN_MAT')}
+                                >
+                                    <Text style={[{ fontSize: 14, fontWeight: '700', color: '#64748B' }, formTaxType === 'TIEN_MAT' && { color: '#8BA367' }]}>Tiền mặt (đ)</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <Text style={styles.inputLabel}>Giá trị {formTaxType === 'PHAN_TRAM' ? '(%)' : '(đ)'}</Text>
+                            <TextInput style={styles.formInput} placeholder={formTaxType === 'PHAN_TRAM' ? "Ví dụ: 8" : "Ví dụ: 15000"} keyboardType="numeric" value={formTaxValue} onChangeText={setFormTaxValue} />
+                            
                             <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 25, gap: 10 }} onPress={() => setFormTaxIsDefault(!formTaxIsDefault)}>
                                 <View style={[styles.filterOuterCircle, formTaxIsDefault && styles.filterOuterSelected]}>{formTaxIsDefault && <View style={styles.filterInnerCircle} />}</View>
                                 <Text style={{ fontSize: 14, fontWeight: '600', color: '#475569' }}>Thiết lập làm mặc định</Text>

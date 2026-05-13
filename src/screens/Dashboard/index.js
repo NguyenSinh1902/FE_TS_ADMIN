@@ -7,7 +7,8 @@ import BottomNav from '../../components/BottomNav';
 import Sidebar from '../../components/Sidebar';
 import styles from './Dashboard.styles';
 import statsApi from '../../api/statsApi';
-import { RefreshControl } from 'react-native';
+import aiStrategyApi from '../../api/aiStrategyApi';
+import { RefreshControl, ActivityIndicator } from 'react-native';
 import NotificationModal from '../../components/NotificationModal';
 import SettingsModal from '../../components/SettingsModal';
 
@@ -35,6 +36,127 @@ export default function Dashboard({ onNavigate, params }) {
     top5BanCham: []
   });
   const [chartData, setChartData] = useState([]);
+
+  const [aiData, setAiData] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+
+  const fetchAIAnalysis = async () => {
+    setShowAIInsights(true);
+    if (aiData) return; // Already fetched for today
+    try {
+      setAiLoading(true);
+      setAiError('');
+      const today = new Date().toISOString().split('T')[0];
+      const res = await aiStrategyApi.analyze(today);
+      setAiData(res);
+    } catch (error) {
+      console.error('Fetch AI error:', error);
+      setAiError('Không thể lấy phân tích AI lúc này.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const renderAIInsights = (text) => {
+    if (!text) return null;
+    const blocks = text.split('\n\n').filter(b => b.trim() !== '');
+
+    const renderBold = (str) => {
+      const parts = str.split(/(\*\*.*?\*\*)/g);
+      return parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <Text key={i} style={{ fontWeight: '700', color: '#1B2A15' }}>{part.slice(2, -2)}</Text>;
+        }
+        return <Text key={i}>{part}</Text>;
+      });
+    };
+
+    return blocks.map((block, index) => {
+      // 1. Header (just **Title**)
+      if (block.startsWith('**') && block.endsWith('**') && !block.includes('\n')) {
+        return (
+          <View key={index} style={{ marginBottom: 20, alignItems: 'center' }}>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: '#1B2A15', textAlign: 'center' }}>{block.slice(2, -2)}</Text>
+            <View style={{ width: 40, height: 3, backgroundColor: '#8BA367', borderRadius: 2, marginTop: 8 }} />
+          </View>
+        );
+      }
+
+      // 2. Section Bullet (* **Title:** Description OR * **Title** Description)
+      const lines = block.split('\n');
+      const firstLine = lines[0].trim();
+
+      if (firstLine.startsWith('*')) {
+        let title = '';
+        let desc = '';
+        // Match format: * **Title:** description
+        const match = firstLine.match(/^\*\s*\*\*(.*?)\*\*:?\s*(.*)$/);
+
+        if (match) {
+          title = match[1];
+          desc = match[2];
+        } else {
+          // Fallback if no specific bold match
+          title = firstLine.replace(/^\*\s*/, '').replace(/\*\*/g, '');
+        }
+
+        // Determine Icon and Color
+        let IconComponent = LightbulbIcon;
+        let iconBg = 'rgba(245, 158, 11, 0.13)';
+        let iconColor = '#F59E0B';
+
+        const lowerTitle = title.toLowerCase();
+        if (lowerTitle.includes('doanh thu') || lowerTitle.includes('đơn hàng') || lowerTitle.includes('tăng trưởng')) {
+          IconComponent = TrendUpIcon;
+          iconBg = 'rgba(16, 185, 129, 0.13)';
+          iconColor = '#10B981';
+        } else if (lowerTitle.includes('chậm') || lowerTitle.includes('cảnh báo') || lowerTitle.includes('tồn kho')) {
+          IconComponent = AlertCircleIcon;
+          iconBg = 'rgba(239, 68, 68, 0.13)';
+          iconColor = '#EF4444';
+        } else if (lowerTitle.includes('combo') || lowerTitle.includes('khuyến mãi') || lowerTitle.includes('gợi ý') || lowerTitle.includes('giải pháp')) {
+          IconComponent = SparklesIcon;
+          iconBg = 'rgba(139, 163, 103, 0.15)';
+          iconColor = '#8BA367';
+        }
+
+        const nestedLines = lines.slice(1).map(l => l.trim()).filter(l => l.startsWith('*'));
+
+        return (
+          <View key={index} style={styles.insightCard}>
+            <View style={[styles.insightIconWrap, { backgroundColor: iconBg }]}>
+              <IconComponent size={24} color={iconColor} />
+            </View>
+            <View style={styles.insightTextWrap}>
+              <Text style={styles.insightTitle}>{title}</Text>
+              {desc ? <Text style={styles.insightDesc}>{renderBold(desc)}</Text> : null}
+
+              {nestedLines.length > 0 && (
+                <View style={{ marginTop: desc ? 12 : 6 }}>
+                  {nestedLines.map((nl, idx) => (
+                    <View key={idx} style={{ flexDirection: 'row', marginBottom: 8 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#8BA367', marginTop: 8, marginRight: 10 }} />
+                      <Text style={{ flex: 1, fontSize: 14, color: '#4A5565', lineHeight: 22 }}>
+                        {renderBold(nl.replace(/^\*\s*/, ''))}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+        );
+      }
+
+      // 3. Fallback for any other paragraph
+      return (
+        <Text key={index} style={{ fontSize: 15, color: '#4A5565', lineHeight: 24, marginBottom: 16 }}>
+          {renderBold(block)}
+        </Text>
+      );
+    });
+  };
 
   const fetchData = async () => {
     try {
@@ -120,28 +242,28 @@ export default function Dashboard({ onNavigate, params }) {
     </Svg>
   );
 
-  const TrendUpIcon = () => (
+  const TrendUpIcon = ({ color = "#10B981" }) => (
     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <Path d="M21 7L13 15L9 11L3 17M21 7H15M21 7V13" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M21 7L13 15L9 11L3 17M21 7H15M21 7V13" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 
-  const LightbulbIcon = () => (
+  const LightbulbIcon = ({ color = "#F59E0B" }) => (
     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <Path d="M9 18H15M10 21H14M12 3C7.58172 3 4 6.58172 4 11C4 13.5 5.5 15.5 7 16.5V17C7 17.5523 7.44772 18 8 18H16C16.5523 18 17 17.5523 17 17V16.5C18.5 15.5 20 13.5 20 11C20 6.58172 16.4183 3 12 3Z" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M9 18H15M10 21H14M12 3C7.58172 3 4 6.58172 4 11C4 13.5 5.5 15.5 7 16.5V17C7 17.5523 7.44772 18 8 18H16C16.5523 18 17 17.5523 17 17V16.5C18.5 15.5 20 13.5 20 11C20 6.58172 16.4183 3 12 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 
-  const SparklesIcon = ({ size = 20 }) => (
+  const SparklesIcon = ({ size = 20, color = "white" }) => (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path d="M12 3l1.91 5.81c.21.64.73 1.16 1.37 1.37L21 12l-5.72 1.82c-.64.21-1.16.73-1.37 1.37L12 21l-1.91-5.81c-.21-.64-.73-1.16-1.37-1.37L3 12l5.72-1.82c.64-.21 1.16-.73 1.37-1.37L12 3z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M12 3l1.91 5.81c.21.64.73 1.16 1.37 1.37L21 12l-5.72 1.82c-.64.21-1.16.73-1.37 1.37L12 21l-1.91-5.81c-.21-.64-.73-1.16-1.37-1.37L3 12l5.72-1.82c.64-.21 1.16-.73 1.37-1.37L12 3z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 
-  const AlertCircleIcon = () => (
+  const AlertCircleIcon = ({ color = "#EF4444" }) => (
     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <Circle cx="12" cy="12" r="10" stroke="#EF4444" strokeWidth="2" />
-      <Path d="M12 8V12M12 16H12.01" stroke="#EF4444" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" />
+      <Path d="M12 8V12M12 16H12.01" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 
@@ -398,7 +520,7 @@ export default function Dashboard({ onNavigate, params }) {
                 <TouchableOpacity
                   style={styles.aiWideButtonWrap}
                   activeOpacity={0.9}
-                  onPress={() => setShowAIInsights(true)}
+                  onPress={fetchAIAnalysis}
                 >
                   <LinearGradient
                     colors={['#4A5D23', '#8BA367']}
@@ -452,40 +574,32 @@ export default function Dashboard({ onNavigate, params }) {
                 </TouchableOpacity>
               </LinearGradient>
 
-              <View style={styles.modalContent}>
-                <View style={styles.insightCard}>
-                  <View style={[styles.insightIconWrap, { backgroundColor: 'rgba(16, 185, 129, 0.13)' }]}>
-                    <TrendUpIcon />
+              <View style={[styles.modalContent, { maxHeight: 500 }]}>
+                {aiLoading ? (
+                  <View style={{ padding: 40, alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color="#8BA367" />
+                    <Text style={{ marginTop: 16, color: '#6A7282', fontSize: 15 }}>AI đang phân tích dữ liệu...</Text>
                   </View>
-                  <View style={styles.insightTextWrap}>
-                    <Text style={styles.insightTitle}>Tăng trưởng doanh thu</Text>
-                    <Text style={styles.insightDesc}>Doanh thu tăng 15% so với tuần trước. Xu hướng tích cực!</Text>
+                ) : aiError ? (
+                  <View style={{ padding: 20, alignItems: 'center' }}>
+                    <Text style={{ color: '#EF4444', fontSize: 15 }}>{aiError}</Text>
                   </View>
-                </View>
-
-                <View style={styles.insightCard}>
-                  <View style={[styles.insightIconWrap, { backgroundColor: 'rgba(245, 158, 11, 0.13)' }]}>
-                    <LightbulbIcon />
-                  </View>
-                  <View style={styles.insightTextWrap}>
-                    <Text style={styles.insightTitle}>Gợi ý chiến lược</Text>
-                    <Text style={styles.insightDesc}>Nên tập trung đẩy mạnh Trà Đào Cam Sả vào khung giờ 14h-16h khi nhu cầu cao nhất.</Text>
-                  </View>
-                </View>
-
-                <View style={styles.insightCard}>
-                  <View style={[styles.insightIconWrap, { backgroundColor: 'rgba(239, 68, 68, 0.13)' }]}>
-                    <AlertCircleIcon />
-                  </View>
-                  <View style={styles.insightTextWrap}>
-                    <Text style={styles.insightTitle}>Cảnh báo tồn kho</Text>
-                    <Text style={styles.insightDesc}>Nguyên liệu Trà Ô Long sắp hết. Đề xuất nhập thêm 50kg trong 2 ngày tới.</Text>
-                  </View>
-                </View>
+                ) : aiData ? (
+                  <ScrollView showsVerticalScrollIndicator={false} style={{ width: '100%' }}>
+                    <View style={{ padding: 20, backgroundColor: 'rgba(139, 163, 103, 0.05)', borderRadius: 16 }}>
+                      {renderAIInsights(aiData.loiKhuyenAi)}
+                    </View>
+                  </ScrollView>
+                ) : null}
               </View>
 
               <View style={styles.modalFooter}>
-                <Text style={styles.modalFooterText}>Cập nhật lúc 08:22:15</Text>
+                <TouchableOpacity style={{ paddingVertical: 12, alignItems: 'center' }} onPress={() => { setShowAIInsights(false); onNavigate('AIHistory'); }}>
+                  <Text style={{ color: '#8BA367', fontSize: 14, fontWeight: '700' }}>Xem lịch sử nhật ký AI</Text>
+                </TouchableOpacity>
+                {aiData && aiData.thoiGianTao && (
+                  <Text style={styles.modalFooterText}>Cập nhật lúc {new Date(aiData.thoiGianTao).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</Text>
+                )}
               </View>
             </View>
           </View>
@@ -573,7 +687,7 @@ export default function Dashboard({ onNavigate, params }) {
             <TouchableOpacity
               style={styles.aiWideButtonWrap}
               activeOpacity={0.8}
-              onPress={() => setShowAIInsights(true)}
+              onPress={fetchAIAnalysis}
             >
               <LinearGradient
                 colors={['#8BA367', '#5D6D45']}
@@ -646,7 +760,6 @@ export default function Dashboard({ onNavigate, params }) {
       <Modal visible={showAIInsights} transparent={true} animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-
             <LinearGradient colors={['#8BA367', '#9BB377']} style={styles.modalHeader}>
               <View style={styles.modalHeaderLeft}>
                 <MagicWandIcon />
@@ -660,40 +773,32 @@ export default function Dashboard({ onNavigate, params }) {
               </TouchableOpacity>
             </LinearGradient>
 
-            <View style={styles.modalContent}>
-              <View style={styles.insightCard}>
-                <View style={[styles.insightIconWrap, { backgroundColor: 'rgba(16, 185, 129, 0.13)' }]}>
-                  <TrendUpIcon />
+            <View style={[styles.modalContent, { maxHeight: 500 }]}>
+              {aiLoading ? (
+                <View style={{ padding: 40, alignItems: 'center' }}>
+                  <ActivityIndicator size="large" color="#8BA367" />
+                  <Text style={{ marginTop: 16, color: '#6A7282', fontSize: 15 }}>AI đang phân tích dữ liệu...</Text>
                 </View>
-                <View style={styles.insightTextWrap}>
-                  <Text style={styles.insightTitle}>Tăng trưởng doanh thu</Text>
-                  <Text style={styles.insightDesc}>Doanh thu tăng 15% so với tuần trước. Xu hướng tích cực!</Text>
+              ) : aiError ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <Text style={{ color: '#EF4444', fontSize: 15 }}>{aiError}</Text>
                 </View>
-              </View>
-
-              <View style={styles.insightCard}>
-                <View style={[styles.insightIconWrap, { backgroundColor: 'rgba(245, 158, 11, 0.13)' }]}>
-                  <LightbulbIcon />
-                </View>
-                <View style={styles.insightTextWrap}>
-                  <Text style={styles.insightTitle}>Gợi ý chiến lược</Text>
-                  <Text style={styles.insightDesc}>Nên tập trung đẩy mạnh Trà Đào Cam Sả vào khung giờ 14h-16h khi nhu cầu cao nhất.</Text>
-                </View>
-              </View>
-
-              <View style={styles.insightCard}>
-                <View style={[styles.insightIconWrap, { backgroundColor: 'rgba(239, 68, 68, 0.13)' }]}>
-                  <AlertCircleIcon />
-                </View>
-                <View style={styles.insightTextWrap}>
-                  <Text style={styles.insightTitle}>Cảnh báo tồn kho</Text>
-                  <Text style={styles.insightDesc}>Nguyên liệu Trà Ô Long sắp hết. Đề xuất nhập thêm 50kg trong 2 ngày tới.</Text>
-                </View>
-              </View>
+              ) : aiData ? (
+                <ScrollView showsVerticalScrollIndicator={false} style={{ width: '100%' }}>
+                  <View style={{ padding: 20, backgroundColor: 'rgba(139, 163, 103, 0.05)', borderRadius: 16 }}>
+                    {renderAIInsights(aiData.loiKhuyenAi)}
+                  </View>
+                </ScrollView>
+              ) : null}
             </View>
 
             <View style={styles.modalFooter}>
-              <Text style={styles.modalFooterText}>Cập nhật lúc 08:22:15</Text>
+              <TouchableOpacity style={{ paddingVertical: 12, alignItems: 'center' }} onPress={() => { setShowAIInsights(false); onNavigate('AIHistory'); }}>
+                <Text style={{ color: '#8BA367', fontSize: 14, fontWeight: '700' }}>Xem lịch sử nhật ký AI</Text>
+              </TouchableOpacity>
+              {aiData && aiData.thoiGianTao && (
+                <Text style={styles.modalFooterText}>Cập nhật lúc {new Date(aiData.thoiGianTao).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</Text>
+              )}
             </View>
 
           </View>

@@ -50,7 +50,8 @@ const Login = ({
     isEmailFocused, setEmailFocused, 
     isPasswordFocused, setPasswordFocused, 
     handleLogin, handleBack,
-    errorMessage, isLoading
+    errorMessage, isLoading,
+    onForgotPassword
 }) => {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -115,7 +116,7 @@ const Login = ({
         <View style={styles.loginBtnGlow} />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.forgotBtn}><Text style={styles.forgotText}>Quên mật khẩu?</Text></TouchableOpacity>
+      <TouchableOpacity style={styles.forgotBtn} onPress={onForgotPassword}><Text style={styles.forgotText}>Quên mật khẩu?</Text></TouchableOpacity>
 
       <View style={styles.footerContainer}>
         <TouchableOpacity style={styles.footerRow}><SupportIcon /><Text style={styles.footerText}>Liên hệ hỗ trợ kỹ thuật</Text></TouchableOpacity>

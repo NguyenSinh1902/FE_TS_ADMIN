@@ -11,6 +11,7 @@ import Menu from './src/screens/Menu';
 import StaffManagement from './src/screens/StaffManagement';
 import Facility from './src/screens/Facility';
 import Finance from './src/screens/Finance';
+import AIHistory from './src/screens/AIHistory';
 import CategoryDetail from './src/screens/Menu/sub-screens/CategoryDetail';
 import ProductDetail from './src/screens/Menu/sub-screens/ProductDetail';
 
@@ -90,6 +91,7 @@ const App = () => {
         <Stack.Screen name="StaffManagement" component={renderScreen(StaffManagement)} />
         <Stack.Screen name="Facility" component={renderScreen(Facility)} />
         <Stack.Screen name="Finance" component={renderScreen(Finance)} />
+        <Stack.Screen name="AIHistory" component={renderScreen(AIHistory)} />
         <Stack.Screen name="CategoryDetail" component={renderScreen(CategoryDetail)} />
         <Stack.Screen name="ProductDetail" component={renderScreen(ProductDetail)} />
       </Stack.Navigator>

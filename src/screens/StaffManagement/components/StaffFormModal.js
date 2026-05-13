@@ -22,8 +22,10 @@ const StaffFormModal = ({ visible, onClose, staff, onSaveSuccess }) => {
         soDienThoai: '',
         vaiTro: 'THU_NGAN'
     });
+    const [fieldErrors, setFieldErrors] = useState({});
 
     useEffect(() => {
+        setFieldErrors({});
         if (staff) {
             setFormData({
                 hoTen: staff.hoTen || '',
@@ -48,20 +50,22 @@ const StaffFormModal = ({ visible, onClose, staff, onSaveSuccess }) => {
             launchImageLibrary(options, (response) => {
                 if (response.didCancel) return;
                 if (response.errorCode) {
-                    Alert.alert('Lỗi', 'Không thể chọn ảnh');
+                    setFieldErrors({ general: 'Không thể chọn ảnh' });
                     return;
                 }
                 const asset = response.assets[0];
                 setSelectedImage(asset);
             });
         } catch (err) {
-            Alert.alert('Thông báo', 'Chức năng chọn ảnh chưa sẵn sàng. Hãy build lại ứng dụng.');
+            setFieldErrors({ general: 'Chức năng chọn ảnh chưa sẵn sàng. Hãy build lại ứng dụng.' });
         }
     };
 
     const handleSave = async () => {
-        if (!formData.hoTen || !formData.soDienThoai) {
-            Alert.alert('Thông báo', 'Vui lòng nhập đầy đủ họ tên và số điện thoại');
+        let errors = {};
+        if (!formData.hoTen) errors.hoTen = 'Vui lòng nhập họ tên';
+        if (Object.keys(errors).length > 0) {
+            setFieldErrors(errors);
             return;
         }
 
@@ -75,8 +79,8 @@ const StaffFormModal = ({ visible, onClose, staff, onSaveSuccess }) => {
             const requestJson = JSON.stringify({
                 hoTen: formData.hoTen,
                 gioiTinh: formData.gioiTinh,
-                ngaySinh: formData.ngaySinh,
-                soDienThoai: formData.soDienThoai
+                ngaySinh: (formData.ngaySinh && formData.ngaySinh !== 'N/A') ? formData.ngaySinh : null,
+                soDienThoai: formData.soDienThoai ? formData.soDienThoai : null
             });
 
             // In React Native (Android), FormData supports appending a part
@@ -101,12 +105,16 @@ const StaffFormModal = ({ visible, onClose, staff, onSaveSuccess }) => {
                 await staffApi.updateRole(staff.id, formData.vaiTro);
             }
 
-            Alert.alert('Thành công', 'Đã cập nhật thông tin nhân viên');
-            onSaveSuccess();
+            onSaveSuccess('Đã cập nhật thông tin nhân viên');
             onClose();
         } catch (error) {
-            console.error('Update staff error:', error);
-            Alert.alert('Lỗi', 'Không thể lưu thông tin nhân viên.');
+            if (error.response?.data?.errors) {
+                setFieldErrors(error.response.data.errors);
+            } else if (error.response?.data?.message) {
+                setFieldErrors({ general: error.response.data.message });
+            } else {
+                setFieldErrors({ general: 'Không thể lưu thông tin nhân viên.' });
+            }
         } finally {
             setLoading(false);
         }
@@ -170,12 +178,13 @@ const StaffFormModal = ({ visible, onClose, staff, onSaveSuccess }) => {
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Họ và tên</Text>
                             <TextInput 
-                                style={styles.input} 
+                                style={[styles.input, fieldErrors.hoTen && { borderColor: '#EF4444' }]} 
                                 value={formData.hoTen} 
-                                onChangeText={(t) => setFormData({...formData, hoTen: t})}
+                                onChangeText={(t) => { setFormData({...formData, hoTen: t}); setFieldErrors(prev => ({...prev, hoTen: null})) }}
                                 placeholder="Nhập họ tên..."
                                 placeholderTextColor="#9CA3AF"
                             />
+                            {fieldErrors.hoTen && <Text style={{ color: '#EF4444', fontSize: 12, marginTop: 4, marginLeft: 4 }}>{fieldErrors.hoTen}</Text>}
                         </View>
 
                         <View style={styles.row}>
@@ -233,13 +242,14 @@ const StaffFormModal = ({ visible, onClose, staff, onSaveSuccess }) => {
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Số điện thoại liên lạc</Text>
                             <TextInput 
-                                style={styles.input} 
+                                style={[styles.input, fieldErrors.soDienThoai && { borderColor: '#EF4444' }]} 
                                 value={formData.soDienThoai} 
-                                onChangeText={(t) => setFormData({...formData, soDienThoai: t})}
+                                onChangeText={(t) => { setFormData({...formData, soDienThoai: t}); setFieldErrors(prev => ({...prev, soDienThoai: null})) }}
                                 keyboardType="phone-pad"
                                 placeholder="Nhập số điện thoại..."
                                 placeholderTextColor="#9CA3AF"
                             />
+                            {fieldErrors.soDienThoai && <Text style={{ color: '#EF4444', fontSize: 12, marginTop: 4, marginLeft: 4 }}>{fieldErrors.soDienThoai}</Text>}
                         </View>
 
                         <View style={styles.inputGroup}>
@@ -265,6 +275,12 @@ const StaffFormModal = ({ visible, onClose, staff, onSaveSuccess }) => {
                                 </TouchableOpacity>
                             </View>
                         </View>
+                        
+                        {fieldErrors.general ? (
+                            <Text style={{ color: '#EF4444', fontSize: 13, fontWeight: '600', marginTop: 15, marginBottom: 5, textAlign: 'center' }}>
+                                {fieldErrors.general}
+                            </Text>
+                        ) : null}
                         
                         <View style={{ height: 20 }} />
                     </ScrollView>

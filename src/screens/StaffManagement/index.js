@@ -54,6 +54,14 @@ export default function StaffManagement({ onNavigate }) {
     const [activeTab, setActiveTab] = useState('staff');
     const [isTabModalOpen, setIsTabModalOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+    const [showToast, setShowToast] = useState(false);
+
+    const triggerToast = (msg) => {
+        setToastMessage(msg);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+    };
 
     if (isTablet) {
         return (
@@ -85,6 +93,22 @@ export default function StaffManagement({ onNavigate }) {
                 />
 
                 <View style={styles.tabletMain}>
+                    {showToast && (
+                        <View style={{ 
+                            position: 'absolute', top: 10, alignSelf: 'center',
+                            backgroundColor: '#E6F4EA', paddingVertical: 8, paddingHorizontal: 16, 
+                            borderRadius: 20, zIndex: 9999,
+                            borderWidth: 1, borderColor: '#A3D2A6',
+                            flexDirection: 'row', alignItems: 'center',
+                            shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3
+                        }}>
+                            <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginRight: 6 }}>
+                                <Circle cx="12" cy="12" r="10" fill="#34A853" />
+                                <Path d="M8 12L11 15L16 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </Svg>
+                            <Text style={{ color: '#1E4620', fontWeight: '600', fontSize: 13 }}>{toastMessage}</Text>
+                        </View>
+                    )}
                     <View style={styles.tabletHeader}>
                         <View>
                             <Text style={styles.tabletHeaderTitle}>Quản lý Nhân sự & CRM</Text>
@@ -120,9 +144,9 @@ export default function StaffManagement({ onNavigate }) {
                     </View>
 
                     {activeTab === 'staff' ? (
-                        <StaffTab onModalStateChange={setIsTabModalOpen} />
+                        <StaffTab onModalStateChange={setIsTabModalOpen} showToast={triggerToast} />
                     ) : (
-                        <CustomersTab onModalStateChange={setIsTabModalOpen} />
+                        <CustomersTab onModalStateChange={setIsTabModalOpen} showToast={triggerToast} />
                     )}
                 </View>
             </View>
@@ -132,6 +156,22 @@ export default function StaffManagement({ onNavigate }) {
     // Mobile Fallback
     return (
         <View style={styles.mainContainer}>
+            {showToast && (
+                <View style={{ 
+                    position: 'absolute', top: 10, alignSelf: 'center',
+                    backgroundColor: '#E6F4EA', paddingVertical: 8, paddingHorizontal: 16, 
+                    borderRadius: 20, zIndex: 9999,
+                    borderWidth: 1, borderColor: '#A3D2A6',
+                    flexDirection: 'row', alignItems: 'center',
+                    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3
+                }}>
+                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginRight: 6 }}>
+                        <Circle cx="12" cy="12" r="10" fill="#34A853" />
+                        <Path d="M8 12L11 15L16 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </Svg>
+                    <Text style={{ color: '#1E4620', fontWeight: '600', fontSize: 13 }}>{toastMessage}</Text>
+                </View>
+            )}
             <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
             <Header userName="Anna Trần" title="Quản lý Nhân sự & CRM" />
@@ -156,9 +196,9 @@ export default function StaffManagement({ onNavigate }) {
 
             {/* Specialized Tab Content */}
             {activeTab === 'staff' ? (
-                <StaffTab onModalStateChange={setIsTabModalOpen} />
+                <StaffTab onModalStateChange={setIsTabModalOpen} showToast={triggerToast} />
             ) : (
-                <CustomersTab onModalStateChange={setIsTabModalOpen} />
+                <CustomersTab onModalStateChange={setIsTabModalOpen} showToast={triggerToast} />
             )}
 
             {/* Bottom Nav: Only visible if no tab-level modal is active */}

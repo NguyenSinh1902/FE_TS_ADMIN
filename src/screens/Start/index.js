@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Login from '../Login';
+import ForgotPassword from '../Login/ForgotPassword';
 import startStyles from './Start.styles';
 import authApi from '../../api/authApi';
 import safeAsyncStorage from '../../utils/storage';
@@ -219,16 +220,21 @@ export default function Start({ onNavigate }) {
 
       <Animated.View style={[startStyles.rightPane, { transform: [{ translateX: rightPaneTranslateX }] }]}>
         <View style={{ flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center' }}>
-          <Login 
-            identifier={identifier} setIdentifier={(val) => { setIdentifier(val); setErrorMessage(''); }}
-            password={password} setPassword={(val) => { setPassword(val); setErrorMessage(''); }}
-            isEmailFocused={isEmailFocused} setEmailFocused={setEmailFocused}
-            isPasswordFocused={isPasswordFocused} setPasswordFocused={setPasswordFocused}
-            handleLogin={handleLoginSubmit}
-            handleBack={handleBackToStart}
-            errorMessage={errorMessage}
-            isLoading={isLoading}
-          />
+          {step !== 'forgot_password' ? (
+            <Login 
+              identifier={identifier} setIdentifier={(val) => { setIdentifier(val); setErrorMessage(''); }}
+              password={password} setPassword={(val) => { setPassword(val); setErrorMessage(''); }}
+              isEmailFocused={isEmailFocused} setEmailFocused={setEmailFocused}
+              isPasswordFocused={isPasswordFocused} setPasswordFocused={setPasswordFocused}
+              handleLogin={handleLoginSubmit}
+              handleBack={handleBackToStart}
+              errorMessage={errorMessage}
+              isLoading={isLoading}
+              onForgotPassword={() => setStep('forgot_password')}
+            />
+          ) : (
+            <ForgotPassword onBack={() => setStep('login')} />
+          )}
         </View>
       </Animated.View>
     </View>

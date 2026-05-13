@@ -146,11 +146,19 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
     const fetchAllData = async () => {
         try {
             setLoading(true);
-            const [tablesRes, resvRes, invoicesRes] = await Promise.all([
-                tableApi.getAll(),
-                reservationApi.getAll(),
-                invoiceApi.getAll()
-            ]);
+            
+            const tablesRes = await tableApi.getAll().catch(e => {
+                console.log('Fetch tables error:', e.message);
+                return [];
+            });
+            const resvRes = await reservationApi.getAll().catch(e => {
+                console.log('Fetch reservations error:', e.message);
+                return [];
+            });
+            const invoicesRes = await invoiceApi.getAll().catch(e => {
+                console.log('Fetch invoices error:', e.message);
+                return [];
+            });
             
             const mappedTables = (tablesRes || []).map(t => ({
                 id: t.idBan,

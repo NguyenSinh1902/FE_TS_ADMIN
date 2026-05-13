@@ -5,6 +5,9 @@ import { SearchIcon, FilterIcon, BadgeIcon, CartIcon, CoinIcon, PlusIcon, EditIc
 import customerApi from '../../../api/customerApi';
 import { RefreshControl, ActivityIndicator, Alert, Pressable, StyleSheet } from 'react-native';
 import CustomerFormModal from '../components/CustomerFormModal';
+import ConfirmModal from '../components/ConfirmModal';
+import PurchaseHistoryModal from '../components/PurchaseHistoryModal';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 const TIER_NAME_MAP = {
     'MOI': 'Khách mới',
@@ -18,7 +21,7 @@ const TIER_LABEL_MAP = {
     'VANG': 'VÀNG',
 };
 
-const CustomersTab = ({ onModalStateChange }) => {
+const CustomersTab = ({ onModalStateChange, showToast }) => {
     const { width } = useWindowDimensions();
     const isTablet = width >= 768;
     const [customerList, setCustomerList] = useState([]);
@@ -35,6 +38,11 @@ const CustomersTab = ({ onModalStateChange }) => {
     const [formTarget, setFormTarget] = useState(null);
     const [actionMenuContext, setActionMenuContext] = useState(null);
     const [filterPos, setFilterPos] = useState(225);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [customerToDelete, setCustomerToDelete] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [historyCustomer, setHistoryCustomer] = useState(null);
 
     const onMorePress = (event, data) => {
         const { pageY } = event.nativeEvent;
@@ -80,27 +88,30 @@ const CustomersTab = ({ onModalStateChange }) => {
     };
 
     React.useEffect(() => {
-        onModalStateChange(showCustFilter || !!selectedDetail || showFormModal || !!actionMenuContext);
-    }, [showCustFilter, selectedDetail, showFormModal, actionMenuContext]);
+        onModalStateChange(showCustFilter || !!selectedDetail || showFormModal || !!actionMenuContext || showHistoryModal);
+    }, [showCustFilter, selectedDetail, showFormModal, actionMenuContext, showHistoryModal]);
 
     const handleDelete = (id) => {
-        Alert.alert('Xác nhận', 'Bạn có chắc muốn xóa khách hàng này?', [
-            { text: 'Hủy' },
-            { 
-                text: 'Xóa', 
-                style: 'destructive',
-                onPress: async () => {
-                    try {
-                        await customerApi.delete(id);
-                        setSelectedDetail(null);
-                        setActionMenuContext(null);
-                        fetchCustomers();
-                    } catch (error) {
-                        Alert.alert('Lỗi', 'Không thể xóa khách hàng');
-                    }
-                }
-            }
-        ]);
+        setCustomerToDelete(id);
+        setShowConfirmModal(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!customerToDelete) return;
+        try {
+            setDeleteLoading(true);
+            await customerApi.delete(customerToDelete);
+            setSelectedDetail(null);
+            setActionMenuContext(null);
+            fetchCustomers();
+            showToast('Đã xóa khách hàng');
+        } catch (error) {
+            showToast('Không thể xóa khách hàng');
+        } finally {
+            setDeleteLoading(false);
+            setShowConfirmModal(false);
+            setCustomerToDelete(null);
+        }
     };
 
     const filteredCustomers = customerList.filter(item => {
@@ -314,11 +325,21 @@ const CustomersTab = ({ onModalStateChange }) => {
                                         <Text style={styles.custDetailBtnTextEdit}>Chỉnh sửa</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity 
+                                        style={[styles.custDetailBtnEdit, { backgroundColor: 'rgba(139,163,103,0.1)', flex: 1.2 }]}
+                                        onPress={() => { setHistoryCustomer(selectedDetail); setShowHistoryModal(true); }}
+                                    >
+                                        <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                            <Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#8BA367" strokeWidth="2" strokeLinecap="round" />
+                                            <Path d="M9 15h6M9 11h6" stroke="#8BA367" strokeWidth="2" strokeLinecap="round" />
+                                        </Svg>
+                                        <Text style={[styles.custDetailBtnTextEdit, { color: '#8BA367' }]}>Lịch sử mua</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity 
                                         style={styles.custDetailBtnDelete}
                                         onPress={() => handleDelete(selectedDetail.id)}
                                     >
                                         <TrashIcon color="#EF4444" />
-                                        <Text style={styles.custDetailBtnTextDelete}>Xóa khách</Text>
+                                        <Text style={styles.custDetailBtnTextDelete}>Xóa</Text>
                                     </TouchableOpacity>
                                 </View>
                             </>
@@ -331,7 +352,28 @@ const CustomersTab = ({ onModalStateChange }) => {
                 visible={showFormModal} 
                 onClose={() => setShowFormModal(false)}
                 customer={formTarget}
-                onSaveSuccess={fetchCustomers}
+                onSaveSuccess={(msg) => {
+                    fetchCustomers();
+                    showToast(msg);
+                }}
+            />
+
+            <PurchaseHistoryModal
+                visible={showHistoryModal}
+                onClose={() => setShowHistoryModal(false)}
+                customer={historyCustomer}
+            />
+
+            <ConfirmModal 
+                visible={showConfirmModal}
+                title="Xác nhận xóa"
+                message="Bạn có chắc muốn xóa khách hàng này? Hành động này không thể hoàn tác."
+                onConfirm={handleConfirmDelete}
+                onCancel={() => {
+                    setShowConfirmModal(false);
+                    setCustomerToDelete(null);
+                }}
+                loading={deleteLoading}
             />
         </View>
     );

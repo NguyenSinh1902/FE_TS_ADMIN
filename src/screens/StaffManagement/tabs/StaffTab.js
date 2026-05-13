@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, Modal, Switch, TextInput, Platform, useWindowDimensions } from 'react-native';
+import { RefreshControl, ActivityIndicator } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import styles from './StaffTab.styles';
 import { 
@@ -7,8 +8,13 @@ import {
     MoreIcon, CloseIcon, EditIcon, TrashIcon 
 } from '../StaffIcons';
 import staffApi from '../../../api/staffApi';
-import { RefreshControl, Alert, ActivityIndicator } from 'react-native';
 import StaffFormModal from '../components/StaffFormModal';
+import ConfirmModal from '../components/ConfirmModal';
+import AddStaffModal from '../components/AddStaffModal';
+
+const AVATAR_DEFAULT = require('../../../assets/images/avatardefault.png');
+// Returns a valid Image source — remote URI or local default asset
+const getAvatarSource = (uri) => uri ? { uri } : AVATAR_DEFAULT;
 
 const ROLE_MAP = {
     'ADMIN': 'Quản trị',
@@ -22,7 +28,7 @@ const STATUS_MAP = {
     'CHO_DUYET': 'Chờ duyệt'
 };
 
-const StaffTab = ({ onModalStateChange }) => {
+const StaffTab = ({ onModalStateChange, showToast }) => {
     const [activeList, setActiveList] = useState([]);
     const [pendingList, setPendingList] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -31,12 +37,20 @@ const StaffTab = ({ onModalStateChange }) => {
     const [showStaffFilter, setShowStaffFilter] = useState(false);
     const [showPendingModal, setShowPendingModal] = useState(false);
     const [staffFilterRole, setStaffFilterRole] = useState('ALL');
-    const [staffSort, setStaffSort] = useState('NEWEST'); 
+    const [staffSort, setStaffSort] = useState('NEWEST');
+    const [showAddModal, setShowAddModal] = useState(false);
     
     const [actionMenuContext, setActionMenuContext] = useState(null);
     const [selectedDetail, setSelectedDetail] = useState(null);
     const [selectedStaff, setSelectedStaff] = useState(null);
     const [filterPos, setFilterPos] = useState(360);
+    const [confirmModalConfig, setConfirmModalConfig] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        onConfirm: () => {},
+        loading: false
+    });
 
     const fetchStaffs = async () => {
         try {
@@ -56,7 +70,7 @@ const StaffTab = ({ onModalStateChange }) => {
                 gioiTinh: item.gioiTinh || 'N/A',
                 ngaySinh: item.ngaySinh || 'N/A',
                 trangThai: item.trangThai,
-                img: item.hinhAnh ? item.hinhAnh : `https://i.pravatar.cc/150?u=${item.idNhanVien}` 
+                img: item.avatar || null,
             });
 
             setPendingList((pending || []).filter(i => i.vaiTro !== 'ADMIN').map(mapStaff));
@@ -83,62 +97,67 @@ const StaffTab = ({ onModalStateChange }) => {
             const nextStatus = item.trangThai === 'HOAT_DONG' ? 'BI_KHOA' : 'HOAT_DONG';
             await staffApi.updateStatus(item.id, nextStatus);
             fetchStaffs();
+            showToast(`Đã ${nextStatus === 'HOAT_DONG' ? 'mở khóa' : 'khóa'} nhân viên`);
         } catch (error) {
-            Alert.alert('Lỗi', 'Không thể cập nhật trạng thái nhân viên');
+            showToast('Không thể cập nhật trạng thái nhân viên');
         }
     };
 
     const handleAccept = async (id) => {
         try {
             await staffApi.updateStatus(id, 'HOAT_DONG');
-            Alert.alert('Thành công', 'Đã duyệt nhân viên');
+            showToast('Đã duyệt nhân viên');
             fetchStaffs();
         } catch (error) {
-            Alert.alert('Lỗi', 'Không thể duyệt nhân viên');
+            showToast('Không thể duyệt nhân viên');
         }
     };
 
     const handleReject = (id) => {
-        Alert.alert('Xác nhận', 'Bạn có chắc muốn xóa yêu cầu đăng ký này?', [
-            { text: 'Hủy' },
-            { 
-                text: 'Xóa', 
-                style: 'destructive',
-                onPress: async () => {
-                    try {
-                        await staffApi.delete(id);
-                        fetchStaffs();
-                    } catch (error) {
-                        Alert.alert('Lỗi', 'Không thể xóa nhân viên');
-                    }
+        setConfirmModalConfig({
+            visible: true,
+            title: 'Xác nhận xóa',
+            message: 'Bạn có chắc muốn xóa yêu cầu đăng ký này?',
+            onConfirm: async () => {
+                try {
+                    setConfirmModalConfig(prev => ({ ...prev, loading: true }));
+                    await staffApi.delete(id);
+                    fetchStaffs();
+                    showToast('Đã xóa yêu cầu đăng ký');
+                } catch (error) {
+                    showToast('Không thể xóa yêu cầu đăng ký');
+                } finally {
+                    setConfirmModalConfig({ visible: false, title: '', message: '', onConfirm: () => {}, loading: false });
                 }
             }
-        ]);
+        });
     };
 
     const handleDelete = (id) => {
-        Alert.alert('Xác nhận', 'Bạn có chắc muốn sa thải nhân viên này?', [
-            { text: 'Hủy' },
-            { 
-                text: 'Sa thải', 
-                style: 'destructive',
-                onPress: async () => {
-                    try {
-                        await staffApi.delete(id);
-                        setActionMenuContext(null);
-                        setSelectedDetail(null);
-                        fetchStaffs();
-                    } catch (error) {
-                        Alert.alert('Lỗi', 'Không thể thực hiện yêu cầu');
-                    }
+        setConfirmModalConfig({
+            visible: true,
+            title: 'Xác nhận sa thải',
+            message: 'Bạn có chắc muốn sa thải nhân viên này?',
+            onConfirm: async () => {
+                try {
+                    setConfirmModalConfig(prev => ({ ...prev, loading: true }));
+                    await staffApi.delete(id);
+                    setActionMenuContext(null);
+                    setSelectedDetail(null);
+                    fetchStaffs();
+                    showToast('Đã sa thải nhân viên');
+                } catch (error) {
+                    showToast('Không thể thực hiện yêu cầu');
+                } finally {
+                    setConfirmModalConfig({ visible: false, title: '', message: '', onConfirm: () => {}, loading: false });
                 }
             }
-        ]);
-    }
+        });
+    };
 
     React.useEffect(() => {
-        onModalStateChange(!!actionMenuContext || !!selectedDetail || showStaffFilter || !!selectedStaff);
-    }, [actionMenuContext, selectedDetail, showStaffFilter, selectedStaff]);
+        onModalStateChange(!!actionMenuContext || !!selectedDetail || showStaffFilter || !!selectedStaff || showAddModal);
+    }, [actionMenuContext, selectedDetail, showStaffFilter, selectedStaff, showAddModal]);
 
     const onMorePress = (e, item) => {
         setActionMenuContext({ data: item, y: e.nativeEvent.pageY - 40 });
@@ -231,17 +250,27 @@ const StaffTab = ({ onModalStateChange }) => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Right: Pending Button (tablet only) */}
+                {/* Right: Add + Pending Buttons (tablet only) */}
                 {isTablet && (
-                    <TouchableOpacity style={styles.pendingActionBtn} onPress={() => setShowPendingModal(true)} activeOpacity={0.8}>
-                        <ClockIcon color="#FFF" width={18} height={18} />
-                        <Text style={styles.pendingActionText}>Tài khoản chờ duyệt</Text>
-                        {pendingList.length > 0 && (
-                            <View style={styles.pendingActionBadge}>
-                                <Text style={styles.pendingActionBadgeText}>{pendingList.length}</Text>
-                            </View>
-                        )}
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <TouchableOpacity
+                            style={[styles.pendingActionBtn, { backgroundColor: '#8BA367', paddingHorizontal: 16 }]}
+                            onPress={() => setShowAddModal(true)}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={[styles.pendingActionText, { fontSize: 18, marginRight: 4 }]}>+</Text>
+                            <Text style={styles.pendingActionText}>Thêm nhân viên</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.pendingActionBtn} onPress={() => setShowPendingModal(true)} activeOpacity={0.8}>
+                            <ClockIcon color="#FFF" width={18} height={18} />
+                            <Text style={styles.pendingActionText}>Tài khoản chờ duyệt</Text>
+                            {pendingList.length > 0 && (
+                                <View style={styles.pendingActionBadge}>
+                                    <Text style={styles.pendingActionBadgeText}>{pendingList.length}</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    </View>
                 )}
             </View>
 
@@ -259,7 +288,7 @@ const StaffTab = ({ onModalStateChange }) => {
                         <TouchableOpacity key={item.id} style={styles.tableRow} activeOpacity={0.7} onPress={() => setSelectedDetail(item)}>
                             <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center' }}>
                                 <View style={styles.avatarWrap}>
-                                    {item.img ? <Image source={{ uri: item.img }} style={styles.avatarImg} /> : <View style={[styles.avatarImg, { backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center' }]}><Text style={styles.avatarInitials}>{item.hoTen.charAt(0)}</Text></View>}
+                                    <Image source={getAvatarSource(item.img)} style={styles.avatarImg} />
                                     <View style={[styles.activeDot, item.trangThai === 'BI_KHOA' && styles.inactiveDot]} />
                                 </View>
                                 <Text style={[styles.tdCellBold, item.trangThai === 'BI_KHOA' && { color: '#9CA3AF' }]} numberOfLines={1}>{item.hoTen}</Text>
@@ -282,7 +311,7 @@ const StaffTab = ({ onModalStateChange }) => {
                         <View key={item.id} style={styles.activeItem}>
                             <TouchableOpacity style={{ flexDirection: 'row', flex: 1, alignItems: 'center' }} activeOpacity={0.7} onPress={() => setSelectedDetail(item)}>
                                 <View style={styles.avatarWrap}>
-                                    {item.img ? <Image source={{ uri: item.img }} style={styles.avatarImg} /> : <View style={[styles.avatarImg, { backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }]}><Text style={styles.avatarInitials}>{item.hoTen.charAt(0)}</Text></View>}
+                                    <Image source={getAvatarSource(item.img)} style={styles.avatarImg} />
                                     <View style={[styles.activeDot, item.trangThai === 'BI_KHOA' && styles.inactiveDot]} />
                                 </View>
                                 <View style={{ flex: 1 }}>
@@ -379,7 +408,9 @@ const StaffTab = ({ onModalStateChange }) => {
                     <TouchableOpacity activeOpacity={1} style={styles.detailCardBox}>
                         {selectedDetail && (
                             <>
-                                <View style={styles.overlapAvatarWrap}><Image source={{ uri: selectedDetail.img }} style={styles.ovlAvatarImg} /></View>
+                                <View style={styles.overlapAvatarWrap}>
+                                    <Image source={getAvatarSource(selectedDetail.img)} style={styles.ovlAvatarImg} />
+                                </View>
                                 <TouchableOpacity style={styles.detailCloseBtn} onPress={() => setSelectedDetail(null)}><CloseIcon /></TouchableOpacity>
                                 <Text style={styles.detailTitle}>{selectedDetail.hoTen}</Text>
                                 <Text style={styles.detailRole}>{selectedDetail.vaiTro}</Text>
@@ -389,11 +420,10 @@ const StaffTab = ({ onModalStateChange }) => {
                                         { label: 'Số điện thoại', val: selectedDetail.sdt },
                                         { label: 'Ngày sinh', val: selectedDetail.ngaySinh },
                                         { label: 'Giới tính', val: selectedDetail.gioiTinh },
-                                        { label: 'Ngày hiệu lực', val: selectedDetail.createdAt || 'N/A' },
                                     ].map((cell, idx) => (
                                         <View key={idx} style={styles.dataCell}><Text style={styles.dataLabel}>{cell.label}</Text><Text style={styles.dataValue}>{cell.val}</Text></View>
                                     ))}
-                                    <View style={styles.dataCell}>
+                                    <View style={[styles.dataCell, { width: '100%' }]}>
                                         <Text style={styles.dataLabel}>Trạng thái Server</Text>
                                         <Text style={[styles.dataValue, { color: selectedDetail.trangThai === 'HOAT_DONG' ? '#10B981' : (selectedDetail.trangThai === 'BI_KHOA' ? '#EF4444' : '#F59E0B') }]}>{STATUS_MAP[selectedDetail.trangThai] || selectedDetail.trangThai}</Text>
                                     </View>
@@ -422,7 +452,28 @@ const StaffTab = ({ onModalStateChange }) => {
                 visible={!!selectedStaff} 
                 onClose={() => setSelectedStaff(null)}
                 staff={selectedStaff}
-                onSaveSuccess={fetchStaffs}
+                onSaveSuccess={(msg) => {
+                    fetchStaffs();
+                    showToast(msg);
+                }}
+            />
+
+            <AddStaffModal
+                visible={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                onSuccess={(msg) => {
+                    fetchStaffs();
+                    showToast(msg);
+                }}
+            />
+
+            <ConfirmModal 
+                visible={confirmModalConfig.visible}
+                title={confirmModalConfig.title}
+                message={confirmModalConfig.message}
+                onConfirm={confirmModalConfig.onConfirm}
+                onCancel={() => setConfirmModalConfig({ visible: false, title: '', message: '', onConfirm: () => {}, loading: false })}
+                loading={confirmModalConfig.loading}
             />
         </View>
     );

@@ -1,15 +1,20 @@
 import axios from 'axios';
+import safeAsyncStorage from '../utils/storage';
 
 const axiosClient = axios.create({
   baseURL: 'http://10.0.2.2:8080/api', // Adjust if testing on physical device
-  timeout: 10000,
+  timeout: 40000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 axiosClient.interceptors.request.use(
-  (config) => {
+  async (config) => {
+    const token = await safeAsyncStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => Promise.reject(error)

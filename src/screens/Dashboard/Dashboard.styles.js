@@ -310,8 +310,11 @@ export default StyleSheet.create({
     lineHeight: 22,
   },
   modalFooter: {
-    paddingBottom: 20,
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    paddingBottom: 24,
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   modalFooterText: {
     color: '#6A7282',

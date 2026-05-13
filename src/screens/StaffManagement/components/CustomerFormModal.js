@@ -16,8 +16,10 @@ const CustomerFormModal = ({ visible, onClose, customer, onSaveSuccess }) => {
         soDienThoai: '',
         gioiTinh: 'NAM'
     });
+    const [fieldErrors, setFieldErrors] = useState({});
 
     useEffect(() => {
+        setFieldErrors({});
         if (customer) {
             setFormData({
                 hoTen: customer.hoTen || '',
@@ -34,25 +36,34 @@ const CustomerFormModal = ({ visible, onClose, customer, onSaveSuccess }) => {
     }, [customer, visible]);
 
     const handleSave = async () => {
-        if (!formData.hoTen || !formData.soDienThoai) {
-            Alert.alert('Thông báo', 'Vui lòng nhập đầy đủ họ tên và số điện thoại');
+        let errors = {};
+        if (!formData.hoTen) errors.hoTen = 'Vui lòng nhập họ tên';
+        if (Object.keys(errors).length > 0) {
+            setFieldErrors(errors);
             return;
         }
 
         try {
             setLoading(true);
+            setFieldErrors({});
+            let message = '';
             if (customer) {
                 await customerApi.update(customer.id, formData);
-                Alert.alert('Thành công', 'Đã cập nhật thông tin khách hàng');
+                message = 'Đã cập nhật thông tin khách hàng';
             } else {
                 await customerApi.create(formData);
-                Alert.alert('Thành công', 'Đã thêm khách hàng mới');
+                message = 'Đã thêm khách hàng mới';
             }
-            onSaveSuccess();
+            onSaveSuccess(message);
             onClose();
         } catch (error) {
-            console.error('Save customer error:', error);
-            Alert.alert('Lỗi', 'Không thể lưu thông tin khách hàng');
+            if (error.response?.data?.errors) {
+                setFieldErrors(error.response.data.errors);
+            } else if (error.response?.data?.message) {
+                setFieldErrors({ general: error.response.data.message });
+            } else {
+                setFieldErrors({ general: 'Không thể lưu thông tin khách hàng' });
+            }
         } finally {
             setLoading(false);
         }
@@ -77,24 +88,26 @@ const CustomerFormModal = ({ visible, onClose, customer, onSaveSuccess }) => {
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Họ và tên khách hàng</Text>
                             <TextInput 
-                                style={styles.input} 
+                                style={[styles.input, fieldErrors.hoTen && { borderColor: '#EF4444' }]} 
                                 value={formData.hoTen} 
-                                onChangeText={(t) => setFormData({...formData, hoTen: t})}
+                                onChangeText={(t) => { setFormData({...formData, hoTen: t}); setFieldErrors(prev => ({...prev, hoTen: null})) }}
                                 placeholder="Ví dụ: Nguyễn Văn A"
                                 placeholderTextColor="#9CA3AF"
                             />
+                            {fieldErrors.hoTen && <Text style={{ color: '#EF4444', fontSize: 12, marginTop: 4, marginLeft: 4 }}>{fieldErrors.hoTen}</Text>}
                         </View>
 
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Số điện thoại liên lạc</Text>
                             <TextInput 
-                                style={styles.input} 
+                                style={[styles.input, fieldErrors.soDienThoai && { borderColor: '#EF4444' }]} 
                                 value={formData.soDienThoai} 
-                                onChangeText={(t) => setFormData({...formData, soDienThoai: t})}
+                                onChangeText={(t) => { setFormData({...formData, soDienThoai: t}); setFieldErrors(prev => ({...prev, soDienThoai: null})) }}
                                 keyboardType="phone-pad"
                                 placeholder="09xx xxx xxx"
                                 placeholderTextColor="#9CA3AF"
                             />
+                            {fieldErrors.soDienThoai && <Text style={{ color: '#EF4444', fontSize: 12, marginTop: 4, marginLeft: 4 }}>{fieldErrors.soDienThoai}</Text>}
                         </View>
 
                         <View style={styles.inputGroup}>
@@ -120,6 +133,12 @@ const CustomerFormModal = ({ visible, onClose, customer, onSaveSuccess }) => {
                                 </TouchableOpacity>
                             </View>
                         </View>
+                        
+                        {fieldErrors.general ? (
+                            <Text style={{ color: '#EF4444', fontSize: 13, fontWeight: '600', marginTop: 15, marginBottom: 5, textAlign: 'center' }}>
+                                {fieldErrors.general}
+                            </Text>
+                        ) : null}
                         
                         <View style={{ height: 20 }} />
                     </ScrollView>
