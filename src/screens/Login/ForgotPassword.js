@@ -5,6 +5,24 @@ import LinearGradient from 'react-native-linear-gradient';
 import styles from './Login.styles';
 import authApi from '../../api/authApi';
 
+const getErrorMessage = (error) => {
+  const data = error.response?.data;
+  if (!data) return 'Không thể kết nối đến máy chủ';
+  if (typeof data === 'string') return data;
+  if (data.errors && typeof data.errors === 'object' && !Array.isArray(data.errors)) {
+    return Object.values(data.errors)[0];
+  }
+  if (data.errors && Array.isArray(data.errors) && data.errors.length > 0 && data.errors[0].defaultMessage) {
+    return data.errors[0].defaultMessage;
+  }
+  const keys = Object.keys(data).filter(k => !['timestamp', 'status', 'error', 'path', 'message'].includes(k));
+  if (keys.length > 0 && typeof data[keys[0]] === 'string') {
+    return data[keys[0]];
+  }
+  if (data.message) return data.message;
+  return 'Lỗi từ máy chủ';
+};
+
 const BackIcon = () => (
   <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
     <Path d="M15 18L9 12L15 6" stroke="#1B2A15" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -72,11 +90,7 @@ const ForgotPassword = ({ onBack }) => {
         setErrorMessage('Gửi OTP thất bại');
       }
     } catch (error) {
-      if (error.response?.data?.message) {
-        setErrorMessage(error.response.data.message);
-      } else {
-        setErrorMessage('Không thể kết nối đến máy chủ');
-      }
+      setErrorMessage(getErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
@@ -108,11 +122,7 @@ const ForgotPassword = ({ onBack }) => {
         setErrorMessage('Đổi mật khẩu thất bại');
       }
     } catch (error) {
-      if (error.response?.data?.message) {
-        setErrorMessage(error.response.data.message);
-      } else {
-        setErrorMessage('Không thể kết nối đến máy chủ');
-      }
+      setErrorMessage(getErrorMessage(error));
     } finally {
       setIsLoading(false);
     }

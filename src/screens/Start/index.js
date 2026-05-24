@@ -10,6 +10,24 @@ import startStyles from './Start.styles';
 import authApi from '../../api/authApi';
 import safeAsyncStorage from '../../utils/storage';
 
+const getErrorMessage = (error) => {
+  const data = error.response?.data;
+  if (!data) return 'Không thể kết nối đến máy chủ';
+  if (typeof data === 'string') return data;
+  if (data.errors && typeof data.errors === 'object' && !Array.isArray(data.errors)) {
+    return Object.values(data.errors)[0];
+  }
+  if (data.errors && Array.isArray(data.errors) && data.errors.length > 0 && data.errors[0].defaultMessage) {
+    return data.errors[0].defaultMessage;
+  }
+  const keys = Object.keys(data).filter(k => !['timestamp', 'status', 'error', 'path', 'message'].includes(k));
+  if (keys.length > 0 && typeof data[keys[0]] === 'string') {
+    return data[keys[0]];
+  }
+  if (data.message) return data.message;
+  return 'Lỗi từ máy chủ';
+};
+
 const { width, height } = Dimensions.get('window');
 const BG_IMAGE = require('../../assets/images/matcha_background.png');
 
@@ -123,16 +141,12 @@ export default function Start({ onNavigate }) {
           await safeAsyncStorage.setItem('user', JSON.stringify(response.user));
         }
         
-        onNavigate('Dashboard');
+        onNavigate('Main', { reset: true, params: { screen: 'Dashboard' } });
       } else {
         setErrorMessage(response.message || 'Đăng nhập thất bại');
       }
     } catch (error) {
-      if (error.response?.data?.message) {
-        setErrorMessage(error.response.data.message);
-      } else {
-        setErrorMessage('Không thể kết nối đến máy chủ');
-      }
+      setErrorMessage(getErrorMessage(error));
     } finally {
       setIsLoading(false);
     }

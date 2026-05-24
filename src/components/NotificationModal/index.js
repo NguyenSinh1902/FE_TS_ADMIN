@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, StyleSheet, FlatList, Dimensions, Platform } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, StyleSheet, FlatList, Dimensions } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
+import { useNotifications } from '../../context/NotificationContext';
 
 const CloseIcon = ({ color = '#94A3B8' }) => (
     <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -15,47 +16,28 @@ const CheckAllIcon = () => (
     </Svg>
 );
 
-const NOTIFICATIONS = [
-  { id: '1', title: 'Đơn hàng mới #1024', desc: 'Có một đơn hàng mới từ Bàn 04 cần chuẩn bị gấp.', time: '2 phút trước', type: 'order', isNew: true },
-  { id: '2', title: 'Cảnh báo tồn kho', desc: 'Nguyên liệu Trà Ô Long sắp hết, vui lòng nhập thêm kho.', time: '1 giờ trước', type: 'warning', isNew: true },
-  { id: '3', title: 'Thống kê ngày', desc: 'Báo cáo doanh thu ngày hôm qua đã sẵn sàng. Xem ngay!', time: '1 ngày trước', type: 'info', isNew: false },
-  { id: '4', title: 'Ca làm việc', desc: 'Nhân viên Nguyễn Văn A đã xin đổi ca làm việc ngày mai.', time: '2 ngày trước', type: 'staff', isNew: false },
-];
+const fmtTime = (date) => {
+    if (!date) return '';
+    const d = date instanceof Date ? date : new Date(date);
+    const diffMs = Date.now() - d.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'Vừa xong';
+    if (diffMin < 60) return `${diffMin} phút trước`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `${diffH} giờ trước`;
+    return `${Math.floor(diffH / 24)} ngày trước`;
+};
 
 const NotificationModal = ({ visible, onClose }) => {
-    
-    const renderIcon = (type) => {
-        let color = '#3B82F6';
-        let bg = 'rgba(59, 130, 246, 0.1)';
-        if (type === 'warning') { color = '#F59E0B'; bg = 'rgba(245, 158, 11, 0.1)'; }
-        if (type === 'order') { color = '#10B981'; bg = 'rgba(16, 185, 129, 0.1)'; }
-        if (type === 'staff') { color = '#8B5CF6'; bg = 'rgba(139, 92, 246, 0.1)'; }
+    const { notifications, unreadCount, markAllRead } = useNotifications() || { notifications: [], unreadCount: 0, markAllRead: () => {} };
 
+    const renderIcon = (type) => {
+        const isCancelled = type === 'cancel';
+        const color = isCancelled ? '#DC2626' : '#10B981';
+        const bg = isCancelled ? 'rgba(220, 38, 38, 0.1)' : 'rgba(16, 185, 129, 0.1)';
         return (
             <View style={[styles.iconWrap, { backgroundColor: bg }]}>
-                {type === 'warning' && (
-                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" />
-                        <Path d="M12 8v4M12 16h.01" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                    </Svg>
-                )}
-                {type === 'order' && (
-                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <Path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill={color} stroke={color} strokeWidth="2" strokeLinejoin="round" />
-                    </Svg>
-                )}
-                {type === 'info' && (
-                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" />
-                        <Path d="M12 16v-4M12 8h.01" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                    </Svg>
-                )}
-                {type === 'staff' && (
-                    <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <Circle cx="12" cy="7" r="4" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </Svg>
-                )}
+                <Text style={{ fontSize: 18 }}>{isCancelled ? '🚨' : '📈'}</Text>
             </View>
         );
     };
@@ -65,11 +47,19 @@ const NotificationModal = ({ visible, onClose }) => {
             {renderIcon(item.type)}
             <View style={styles.notiContent}>
                 <Text style={styles.notiTitle}>{item.title}</Text>
-                <Text style={styles.notiDesc} numberOfLines={2}>{item.desc}</Text>
-                <Text style={styles.notiTime}>{item.time}</Text>
+                <Text style={styles.notiDesc} numberOfLines={2}>{item.body}</Text>
+                <Text style={styles.notiTime}>{fmtTime(item.time)}</Text>
             </View>
             {item.isNew && <View style={styles.newDot} />}
         </TouchableOpacity>
+    );
+
+    const EmptyState = () => (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 60 }}>
+            <Text style={{ fontSize: 40, marginBottom: 16 }}>🔔</Text>
+            <Text style={{ color: '#64748B', fontWeight: '600', fontSize: 15 }}>Chưa có thông báo nào</Text>
+            <Text style={{ color: '#94A3B8', fontSize: 13, marginTop: 6 }}>Thông báo sẽ xuất hiện ở đây</Text>
+        </View>
     );
 
     return (
@@ -79,22 +69,28 @@ const NotificationModal = ({ visible, onClose }) => {
                     <View style={styles.header}>
                         <View>
                             <Text style={styles.title}>Thông báo</Text>
-                            <Text style={styles.subtitle}>Bạn có 2 thông báo mới</Text>
+                            <Text style={styles.subtitle}>
+                                {unreadCount > 0 ? `Bạn có ${unreadCount} thông báo mới` : 'Không có thông báo mới'}
+                            </Text>
                         </View>
-                        <TouchableOpacity style={styles.readAllBtn}>
+                        <TouchableOpacity style={styles.readAllBtn} onPress={markAllRead}>
                             <CheckAllIcon />
                             <Text style={styles.readAllText}>Đánh dấu đã đọc</Text>
                         </TouchableOpacity>
                     </View>
 
-                    <FlatList
-                        data={NOTIFICATIONS}
-                        keyExtractor={item => item.id}
-                        renderItem={renderItem}
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.listContent}
-                        ItemSeparatorComponent={() => <View style={styles.separator} />}
-                    />
+                    {notifications.length === 0 ? (
+                        <EmptyState />
+                    ) : (
+                        <FlatList
+                            data={notifications}
+                            keyExtractor={item => item.id}
+                            renderItem={renderItem}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={styles.listContent}
+                            ItemSeparatorComponent={() => <View style={styles.separator} />}
+                        />
+                    )}
                 </View>
             </TouchableOpacity>
         </Modal>

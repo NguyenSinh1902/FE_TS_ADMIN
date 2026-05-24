@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, useWindowDimensions } from 'react-native';
-import BottomNav from '../../components/BottomNav';
 import Header from '../../components/Header';
-import Sidebar from '../../components/Sidebar';
 import styles from './Staff.styles';
 import { UserIcon, UsersIcon } from './StaffIcons';
 import StaffTab from './tabs/StaffTab';
 import CustomersTab from './tabs/CustomersTab';
+import NotificationModal from '../../components/NotificationModal';
+import SettingsModal from '../../components/SettingsModal';
 import { Svg, Path, Circle } from 'react-native-svg';
 
 const SettingsIcon = () => (
@@ -56,6 +56,8 @@ export default function StaffManagement({ onNavigate }) {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [showToast, setShowToast] = useState(false);
+    const [showNotiModal, setShowNotiModal] = useState(false);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
 
     const triggerToast = (msg) => {
         setToastMessage(msg);
@@ -85,18 +87,13 @@ export default function StaffManagement({ onNavigate }) {
                     <View style={{ position: 'absolute', top: 350, right: 180, transform: [{ rotate: '45deg' }] }}><LeafDeco size={65} opacity={0.04} /></View>
                 </View>
 
-                <Sidebar
-                    activeRoute="StaffManagement"
-                    onNavigate={onNavigate}
-                    isCollapsed={isSidebarCollapsed}
-                    onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                />
+                
 
                 <View style={styles.tabletMain}>
                     {showToast && (
-                        <View style={{ 
+                        <View style={{
                             position: 'absolute', top: 10, alignSelf: 'center',
-                            backgroundColor: '#E6F4EA', paddingVertical: 8, paddingHorizontal: 16, 
+                            backgroundColor: '#E6F4EA', paddingVertical: 8, paddingHorizontal: 16,
                             borderRadius: 20, zIndex: 9999,
                             borderWidth: 1, borderColor: '#A3D2A6',
                             flexDirection: 'row', alignItems: 'center',
@@ -130,14 +127,14 @@ export default function StaffManagement({ onNavigate }) {
                                 </TouchableOpacity>
                             </View>
 
-                            <TouchableOpacity style={styles.iconBtn}>
+                            <TouchableOpacity style={styles.iconBtn} onPress={() => setShowNotiModal(true)}>
                                 <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                                     <Path d="M18 8A6 6 0 0 0 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="#1B2A15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                     <Path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" stroke="#1B2A15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                 </Svg>
                                 <View style={styles.badge} />
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.iconBtn}>
+                            <TouchableOpacity style={styles.iconBtn} onPress={() => setShowSettingsModal(true)}>
                                 <SettingsIcon />
                             </TouchableOpacity>
                         </View>
@@ -149,6 +146,8 @@ export default function StaffManagement({ onNavigate }) {
                         <CustomersTab onModalStateChange={setIsTabModalOpen} showToast={triggerToast} />
                     )}
                 </View>
+                <NotificationModal visible={showNotiModal} onClose={() => setShowNotiModal(false)} />
+                <SettingsModal visible={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
             </View>
         );
     }
@@ -157,9 +156,9 @@ export default function StaffManagement({ onNavigate }) {
     return (
         <View style={styles.mainContainer}>
             {showToast && (
-                <View style={{ 
+                <View style={{
                     position: 'absolute', top: 10, alignSelf: 'center',
-                    backgroundColor: '#E6F4EA', paddingVertical: 8, paddingHorizontal: 16, 
+                    backgroundColor: '#E6F4EA', paddingVertical: 8, paddingHorizontal: 16,
                     borderRadius: 20, zIndex: 9999,
                     borderWidth: 1, borderColor: '#A3D2A6',
                     flexDirection: 'row', alignItems: 'center',
@@ -174,7 +173,7 @@ export default function StaffManagement({ onNavigate }) {
             )}
             <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
-            <Header userName="Anna Trần" title="Quản lý Nhân sự & CRM" />
+            <Header userName="Anna Trần" title="Quản lý Nhân sự & CRM" onNotificationPress={() => setShowNotiModal(true)} />
 
             {/* Tab Selection */}
             <View style={styles.tabRow}>
@@ -202,7 +201,9 @@ export default function StaffManagement({ onNavigate }) {
             )}
 
             {/* Bottom Nav: Only visible if no tab-level modal is active */}
-            {!isTabModalOpen && <BottomNav currentScreen="StaffManagement" onNavigate={onNavigate} />}
+
+            <NotificationModal visible={showNotiModal} onClose={() => setShowNotiModal(false)} />
+            <SettingsModal visible={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
         </View>
     );
 }

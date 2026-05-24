@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Modal, Platform, useWindowDimensions, StyleSheet } from 'react-native';
 import Svg, { Circle, Rect, Path } from 'react-native-svg';
 import LinearGradient from 'react-native-linear-gradient';
@@ -7,6 +7,7 @@ import tableApi from '../../../../api/tableApi';
 import invoiceApi from '../../../../api/invoiceApi';
 import reservationApi from '../../../../api/reservationApi';
 import { RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { useRealtime } from '../../../../context/RealtimeContext';
 
 // --- ICONS (TableMap Specific) ---
 const ChairIcon = ({ color }) => (
@@ -91,26 +92,49 @@ const RadioItem = ({ label, selected, onPress }) => (
 
 const AREAS = ['Tất cả', 'Tầng 1', 'Tầng 2', 'Sân vườn', 'Phòng VIP'];
 
+
+/**
+ * Parse thời gian từ server sang epoch ms
+ * Xử lý 3 format Java có thể trả về:
+ * 1. Epoch ms (number)  → do Firebase push
+ * 2. String ISO-8601    → "2026-05-24T00:51:00" hoặc có timezone
+ * 3. Array              → [2026, 5, 24, 0, 51, 0, 0] (default Jackson LocalDateTime)
+ */
+const parseServerTime = (val) => {
+    if (val == null) return NaN;
+    // 1. Số (epoch ms từ Firebase)
+    if (typeof val === 'number') return val;
+    // 2. Array [year, month, day, hour, min, sec, nano?]
+    if (Array.isArray(val)) {
+        const [year, month, day, hour = 0, min = 0, sec = 0] = val;
+        // new Date(year, month-1, day, h, m, s) → local device time
+        // Emulator chạy UTC+7 giống server → kết quả chính xác
+        return new Date(year, month - 1, day, hour, min, sec).getTime();
+    }
+    // 3. String
+    const s = String(val).trim();
+    if (!s) return NaN;
+    // Đã có timezone info → parse trực tiếp
+    if (s.includes('Z') || s.match(/[+-]\d{2}:\d{2}$/)) return new Date(s).getTime();
+    // Không có timezone → LocalDateTime server VN → thêm +07:00
+    return new Date(s + '+07:00').getTime();
+};
+
 const LiveTimer = ({ startTime, textStyle }) => {
-    const [elapsed, setElapsed] = useState('');
+    const [elapsed, setElapsed] = useState('00:00:00');
 
     React.useEffect(() => {
-        if (!startTime) return;
-        const start = new Date(startTime).getTime();
-        
+        if (startTime == null) return;
+        const start = parseServerTime(startTime);
+        if (isNaN(start)) return;
+
         const updateTimer = () => {
-            const now = Date.now();
-            const diffMs = now - start;
-            if (diffMs <= 0) {
-                setElapsed('00:00:00');
-                return;
-            }
+            const diffMs = Date.now() - start;
+            if (diffMs <= 0) { setElapsed('00:00:00'); return; }
             const hrs = Math.floor(diffMs / 3600000);
             const mins = Math.floor((diffMs % 3600000) / 60000);
             const secs = Math.floor((diffMs % 60000) / 1000);
-            setElapsed(
-                `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-            );
+            setElapsed(`${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`);
         };
 
         updateTimer();
@@ -125,14 +149,50 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
     const { width } = useWindowDimensions();
     const isTablet = width >= 768;
 
+    // ─── Realtime Firebase ───────────────────────────────
+    const { realtimeTables, realtimeOrders, lastTableUpdate } = useRealtime();
+
+
     const [localTables, setLocalTables] = useState([]);
     const [reservations, setReservations] = useState([]);
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
-    
+
+    // Gộp dữ liệu bàn từ API + realtime Firebase
+    // Firebase luôn thắng về tinhTrangBan để đảm bảo sync ngay lập tức
+    const tables = useMemo(() => {
+        if (!localTables.length) return localTables;
+        return localTables.map(t => {
+            const fbTable = realtimeTables[t.id];
+            if (!fbTable) return t;
+            let newStatus = t.tinhTrangBan;
+            if (fbTable.tinhTrang === 'TRONG') newStatus = 'TRONG';
+            else if (fbTable.tinhTrang === 'CO_KHACH') newStatus = 'CO_KHACH';
+            else if (fbTable.tinhTrang === 'DA_DAT') newStatus = 'DA_DAT';
+            return newStatus === t.tinhTrangBan ? t : { ...t, tinhTrangBan: newStatus };
+        });
+    }, [localTables, realtimeTables]);
+
+    // Lấy tongThanhToan + thoiGianTao realtime từ Firebase (ưu tiên Firebase > REST API)
+    const getRealtimeTongThanhToan = (invoice) => {
+        if (!invoice?.idHoaDon) return invoice?.tongThanhToan;
+        const fbOrder = realtimeOrders[invoice.idHoaDon];
+        return fbOrder?.tongThanhToan ?? invoice?.tongThanhToan;
+    };
+
+    // Lấy thoiGianTao: ưu tiên Firebase epoch ms, fallback sang REST API field
+    const getTimerStart = (invoice, reservation) => {
+        if (invoice?.idHoaDon) {
+            const fbOrder = realtimeOrders[invoice.idHoaDon];
+            if (fbOrder?.thoiGianTao) return fbOrder.thoiGianTao; // epoch ms từ Firebase (sau khi BE được update)
+        }
+        // Fallback: lấy từ REST API (LocalDateTime array hoặc string)
+        return invoice?.thoiGianTao || reservation?.thoiGianDat;
+    };
+
     const [searchQuery, setSearchQuery] = useState('');
-    const [showFilter, setShowFilter] = useState(false);
+    const [filterAnchor, setFilterAnchor] = useState(null);
     const [filterStatus, setFilterStatus] = useState('ALL');
     const [filterCapacity, setFilterCapacity] = useState('ALL');
     const [selectedArea, setSelectedArea] = useState('Tất cả');
@@ -182,6 +242,27 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
         fetchAllData();
     }, []);
 
+    // Khi Firebase báo bàn đổi trạng thái → fetch lại invoice + reservation để đồng hồ và tiền hiện ngay
+    const fetchSoftRef = React.useRef(null);
+    React.useEffect(() => {
+        if (!lastTableUpdate) return;
+        // Debounce 1s để tránh gọ API quá nhiều
+        if (fetchSoftRef.current) clearTimeout(fetchSoftRef.current);
+        fetchSoftRef.current = setTimeout(async () => {
+            try {
+                const [resvRes, invoicesRes] = await Promise.all([
+                    reservationApi.getAll().catch(() => null),
+                    invoiceApi.getAll().catch(() => null),
+                ]);
+                if (resvRes) setReservations(resvRes);
+                if (invoicesRes) setInvoices(invoicesRes);
+            } catch (e) {
+                // silent
+            }
+        }, 1000);
+        return () => { if (fetchSoftRef.current) clearTimeout(fetchSoftRef.current); };
+    }, [lastTableUpdate]);
+
     const onRefresh = () => {
         setRefreshing(true);
         fetchAllData();
@@ -194,22 +275,36 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
         );
     };
 
-    const getTableInvoice = (tenBan) => {
-        // Tìm hóa đơn active (chưa thanh toán/hủy) của bàn này
-        const activeStatuses = ['CHO_XAC_NHAN', 'DANG_CHUAN_BI', 'DA_HOAN_THANH'];
+    const getTableInvoice = (banId, tenBan) => {
+        const res = getTableReservation(banId);
+        
+        // 1. Tìm theo reservation trước (chính xác nhất)
+        if (res) {
+            const resInv = invoices.find(inv => 
+                inv.idPhieuDat === res.idPhieuDat &&
+                inv.trangThai !== 'DA_THANH_TOAN' &&
+                inv.trangThai !== 'DA_HUY' &&
+                inv.trangThai !== 'HOAN_TAT'
+            );
+            if (resInv) return resInv;
+        }
+
+        // 2. Fallback tìm theo tên bàn
         return invoices.find(inv => 
             inv.loaiDonHang === 'TAI_BAN' &&
-            activeStatuses.includes(inv.trangThai) &&
+            inv.trangThai !== 'DA_THANH_TOAN' &&
+            inv.trangThai !== 'DA_HUY' &&
+            inv.trangThai !== 'HOAN_TAT' &&
             inv.danhSachTenBan?.includes(tenBan)
         );
     };
 
-    const isLocalModalOpen = !!selectedTable || !!actionMenu || showFilter || showFormModal;
+    const isLocalModalOpen = !!selectedTable || !!actionMenu || !!filterAnchor || showFormModal;
     React.useEffect(() => {
         setIsAnyModalOpen(isLocalModalOpen);
     }, [isLocalModalOpen]);
 
-    const filteredTables = localTables.filter(t => {
+    const filteredTables = tables.filter(t => {
         const matchSearch = t.tenBan.toLowerCase().includes(searchQuery.toLowerCase());
         const matchStatus = filterStatus === 'ALL' || t.tinhTrangBan === filterStatus;
         const matchCapacity = filterCapacity === 'ALL' || t.sucChua.toString() === filterCapacity;
@@ -409,6 +504,8 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
         }
     });
 
+    // ─── Live Sync Badge removed ─────────────────────────
+
     return (
         <View style={{ flex: 1 }}>
             {isTablet ? (
@@ -426,11 +523,12 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
                                         onChangeText={setSearchQuery}
                                     />
                                 </View>
-                                <TouchableOpacity style={tabletStyles.filterBtn} onPress={() => setShowFilter(true)}>
+                                <TouchableOpacity style={tabletStyles.filterBtn} onPress={(e) => { const { pageY, pageX } = e.nativeEvent; setFilterAnchor({ y: pageY + 30, x: pageX - 200 }); }}>
                                     <FilterIcon />
                                 </TouchableOpacity>
                             </View>
-                            
+
+
                             {/* Legend Row next to Search */}
                             <View style={[styles.legendRow, { marginBottom: 0, paddingHorizontal: 0, marginLeft: 32 }]}>
                                 <View style={styles.legendItem}>
@@ -520,9 +618,10 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
                                                 <View style={[tabletStyles.statusBadge, { backgroundColor: badgeBgColor, flexDirection: 'row', alignItems: 'center' }]}>
                                                     <Text style={[tabletStyles.statusText, { color: textColor }]}>{statusLabel}</Text>
                                                     {table.tinhTrangBan === 'CO_KHACH' && (() => {
-                                                        const inv = getTableInvoice(table.tenBan);
-                                                        const timerStart = inv?.thoiGianTao || resv?.thoiGianDat;
-                                                        return timerStart ? (
+                                                        const inv = getTableInvoice(table.id, table.tenBan);
+                                                        const resv = getTableReservation(table.id);
+                                                        const timerStart = getTimerStart(inv, resv);
+                                                        return timerStart != null ? (
                                                             <>
                                                                 <Text style={{ color: textColor, marginHorizontal: 4 }}>•</Text>
                                                                 <LiveTimer startTime={timerStart} textStyle={{ fontSize: 12, fontWeight: '700', color: textColor }} />
@@ -530,9 +629,18 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
                                                         ) : null;
                                                     })()}
                                                 </View>
-                                                {table.tinhTrangBan === 'CO_KHACH' && (
-                                                    <ReceiptIcon color="#9CA3AF" />
-                                                )}
+                                                {table.tinhTrangBan === 'CO_KHACH' && (() => {
+                                                    const inv = getTableInvoice(table.id, table.tenBan);
+                                                    const amount = getRealtimeTongThanhToan(inv);
+                                                    return amount != null ? (
+                                                        <View style={{ alignItems: 'flex-end' }}>
+                                                            <Text style={{ fontSize: 9, color: textColor, fontWeight: '600', opacity: 0.7 }}>Tạm tính</Text>
+                                                            <Text style={{ fontSize: 14, fontWeight: '800', color: textColor }}>
+                                                                {Number(amount).toLocaleString()}₫
+                                                            </Text>
+                                                        </View>
+                                                    ) : <ReceiptIcon color="#9CA3AF" />;
+                                                })()}
                                             </View>
                                         </TouchableOpacity>
                                     </View>
@@ -555,7 +663,7 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
                                 onChangeText={setSearchQuery}
                             />
                         </View>
-                        <TouchableOpacity style={styles.filterBtn} onPress={() => setShowFilter(true)}>
+                        <TouchableOpacity style={styles.filterBtn} onPress={(e) => { const { pageY, pageX } = e.nativeEvent; setFilterAnchor({ y: pageY + 30, x: pageX - 200 }); }}>
                             <FilterIcon />
                         </TouchableOpacity>
                     </View>
@@ -689,15 +797,17 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
             </Modal>
 
             {/* Modal: Filter */}
-            <Modal visible={showFilter} transparent animationType="fade">
-                <TouchableOpacity style={styles.filterOverlay} activeOpacity={1} onPress={() => setShowFilter(false)}>
-                    <View style={[styles.filterPopupBox, { top: Platform.OS === 'ios' ? 240 : 220 }]}>
-                        <Text style={styles.filterGroupTitle}>Trạng thái bàn hiện tại</Text>
-                        <RadioItem label="Tất cả" selected={filterStatus === 'ALL'} onPress={() => setFilterStatus('ALL')} />
-                        <RadioItem label="Bàn trống" selected={filterStatus === 'TRONG'} onPress={() => setFilterStatus('TRONG')} />
-                        <RadioItem label="Có khách" selected={filterStatus === 'CO_KHACH'} onPress={() => setFilterStatus('CO_KHACH')} />
-                        <RadioItem label="Đặt trước" selected={filterStatus === 'DA_DAT'} onPress={() => setFilterStatus('DA_DAT')} />
-                    </View>
+            <Modal visible={!!filterAnchor} transparent animationType="none" statusBarTranslucent>
+                <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setFilterAnchor(null)}>
+                    {filterAnchor && (
+                        <TouchableOpacity activeOpacity={1} style={[styles.filterPopupBox, { top: filterAnchor.y, left: Math.max(10, filterAnchor.x), position: 'absolute' }]}>
+                            <Text style={styles.filterGroupTitle}>Trạng thái bàn hiện tại</Text>
+                            <RadioItem label="Tất cả" selected={filterStatus === 'ALL'} onPress={() => { setFilterStatus('ALL'); setFilterAnchor(null); }} />
+                            <RadioItem label="Bàn trống" selected={filterStatus === 'TRONG'} onPress={() => { setFilterStatus('TRONG'); setFilterAnchor(null); }} />
+                            <RadioItem label="Có khách" selected={filterStatus === 'CO_KHACH'} onPress={() => { setFilterStatus('CO_KHACH'); setFilterAnchor(null); }} />
+                            <RadioItem label="Đặt trước" selected={filterStatus === 'DA_DAT'} onPress={() => { setFilterStatus('DA_DAT'); setFilterAnchor(null); }} />
+                        </TouchableOpacity>
+                    )}
                 </TouchableOpacity>
             </Modal>
 

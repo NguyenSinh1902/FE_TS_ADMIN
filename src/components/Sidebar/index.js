@@ -3,9 +3,10 @@ import { View, Text, Pressable, Animated, Image } from 'react-native';
 import styles from './Sidebar.styles';
 import safeAsyncStorage from '../../utils/storage';
 import ProfileModal from './ProfileModal';
+import staffApi from '../../api/staffApi';
 
 const Sidebar = ({
-  activeRoute,
+  activeTab,
   onNavigate,
   isCollapsed,
   onToggleCollapse
@@ -20,7 +21,23 @@ const Sidebar = ({
   const loadUser = async () => {
     const userStr = await safeAsyncStorage.getItem('user');
     if (userStr) {
-      setCurrentUser(JSON.parse(userStr));
+      const parsedUser = JSON.parse(userStr);
+      setCurrentUser(parsedUser);
+
+      // Fetch fresh data to ensure we have the Firebase avatar URL right after login
+      if (parsedUser.idNhanVien) {
+        try {
+          const freshData = await staffApi.getById(parsedUser.idNhanVien);
+          const freshAvatar = freshData?.hinhAnh || freshData?.avatar;
+          if (freshAvatar && freshAvatar !== parsedUser.hinhAnh && freshAvatar !== parsedUser.avatar) {
+            const updatedUser = { ...parsedUser, hinhAnh: freshAvatar, avatar: freshAvatar };
+            setCurrentUser(updatedUser);
+            await safeAsyncStorage.setItem('user', JSON.stringify(updatedUser));
+          }
+        } catch (error) {
+          // Silent fallback to cached data
+        }
+      }
     }
   };
 
@@ -33,7 +50,7 @@ const Sidebar = ({
     }
   };
   const renderNavItem = (route, label, icon, navParams) => {
-    const isActive = activeRoute === route && (!navParams || activeRoute === 'Dashboard');
+    const isActive = activeTab === route && (!navParams || activeTab === 'Dashboard');
     return (
       <Pressable
         style={[
@@ -105,8 +122,8 @@ const Sidebar = ({
           onPress={() => setIsProfileVisible(true)}
         >
           <View style={styles.avatarWrap}>
-            {currentUser?.hinhAnh ? (
-              <Image source={{ uri: currentUser.hinhAnh }} style={{ width: 44, height: 44, borderRadius: 22 }} />
+            {(currentUser?.hinhAnh || currentUser?.avatar) ? (
+              <Image source={{ uri: currentUser.hinhAnh || currentUser.avatar }} style={{ width: 44, height: 44, borderRadius: 22 }} />
             ) : (
               <Text style={styles.avatarInitials}>
                 {currentUser?.hoTen ? currentUser.hoTen.split(' ').pop().substring(0, 2).toUpperCase() : 'AD'}
@@ -116,7 +133,7 @@ const Sidebar = ({
           {!isCollapsed && (
             <View style={styles.userInfoText}>
               <Text style={styles.userName} numberOfLines={1}>{currentUser?.hoTen || 'Quản trị viên'}</Text>
-              <Text style={styles.userRole}>Chủ cửa hàng</Text>
+              <Text style={styles.userRole}>Nhân viên quản lý</Text>
             </View>
           )}
         </Pressable>

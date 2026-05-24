@@ -5,6 +5,7 @@ import categoryApi from '../../../api/categoryApi';
 import productApi from '../../../api/productApi';
 import Svg, { Path } from 'react-native-svg';
 import styles from './ProductFormModal.styles';
+import { useNotifications } from '../../../context/NotificationContext';
 
 const CloseIcon = () => (
     <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -43,6 +44,7 @@ const defaultForm = {
 export default function ProductFormModal({ visible, onClose, initialData, onSave }) {
     const { width } = useWindowDimensions();
     const isTablet = width >= 768;
+    const { showToast } = useNotifications();
     const [formData, setFormData] = useState(defaultForm);
     const [errors, setErrors] = useState({});
     const [categories, setCategories] = useState([]);
@@ -135,12 +137,12 @@ export default function ProductFormModal({ visible, onClose, initialData, onSave
         if (!formData.tenSanPham.trim()) newErrors.tenSanPham = true;
         if (!formData.idDanhMuc) newErrors.idDanhMuc = true;
         if (formData.danhSachBienThe.length === 0) {
-            Alert.alert('Lỗi', 'Vui lòng thêm ít nhất một biến thể.');
+            showToast('Lỗi', 'Vui lòng thêm ít nhất một biến thể.', 'error');
             return;
         }
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
-            Alert.alert('Thiếu thông tin', 'Vui lòng nhập đầy đủ tên và chọn danh mục.');
+            showToast('Lỗi', 'Vui lòng nhập đầy đủ tên và chọn danh mục.', 'error');
             return;
         }
 
@@ -180,11 +182,11 @@ export default function ProductFormModal({ visible, onClose, initialData, onSave
                 await productApi.create(data);
             }
 
-            Alert.alert("Thành công", `Đã ${initialData ? 'cập nhật' : 'thêm'} sản phẩm.`);
+            showToast("Thành công", `Đã ${initialData ? 'cập nhật' : 'thêm'} sản phẩm.`, 'success');
             if (onSave) onSave();
         } catch (error) {
             console.error('Save product error:', error);
-            Alert.alert("Lỗi", "Không thể lưu sản phẩm. Vui lòng kiểm tra lại dữ liệu.");
+            showToast("Lỗi", "Không thể lưu sản phẩm. Vui lòng kiểm tra lại dữ liệu.", 'error');
         } finally {
             setLoading(false);
         }

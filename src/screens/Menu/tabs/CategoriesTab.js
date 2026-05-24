@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Modal, useWindowDimensions, Platform, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Modal, useWindowDimensions, Platform, Pressable, StyleSheet, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import styles from './CategoriesTab.styles';
 import { SearchIcon, FilterIcon, MoreIcon, EditIcon, TrashIcon, CloseIcon, PlusIcon } from '../MenuIcons';
 import categoryApi from '../../../api/categoryApi';
 import productApi from '../../../api/productApi';
-import { RefreshControl, Alert } from 'react-native';
+import { useNotifications } from '../../../context/NotificationContext';
 
 const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
     const { width } = useWindowDimensions();
     const isTablet = width >= 768;
+    const { showToast } = useNotifications();
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilter, setShowFilter] = useState(false);
-    const [filterPos, setFilterPos] = useState(0);
+    const [filterPos, setFilterPos] = useState({ top: 0, left: 0 });
     const [catFilter, setCatFilter] = useState('az'); 
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [actionMenuContext, setActionMenuContext] = useState(null);
@@ -57,7 +58,7 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
             }
         } catch (error) {
             console.error('Fetch categories error:', error);
-            Alert.alert('Lỗi', 'Không thể tải danh sách danh mục');
+            showToast('Lỗi', 'Không thể tải danh sách danh mục', 'error');
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -87,8 +88,9 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                             await categoryApi.delete(id);
                             fetchCategories();
                             setActionMenuContext(null);
+                            showToast('Thành công', 'Đã xóa danh mục', 'success');
                         } catch (error) {
-                            Alert.alert('Lỗi', 'Không thể xóa danh mục này');
+                            showToast('Lỗi', 'Không thể xóa danh mục này', 'error');
                         }
                     }
                 }
@@ -113,7 +115,10 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
 
     const onFilterPress = (e) => {
         if (isTablet) {
-            setFilterPos(e.nativeEvent.pageY + 10);
+            setFilterPos({
+                top: e.nativeEvent.pageY + 10,
+                left: e.nativeEvent.pageX - 100
+            });
         }
         setShowFilter(true);
     };
@@ -145,7 +150,13 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
         };
     });
 
-    const filteredCategories = categories.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const filteredCategories = categories.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase())).sort((a, b) => {
+        if (catFilter === 'az') return a.name.localeCompare(b.name);
+        if (catFilter === 'count_desc') return b.count - a.count;
+        if (catFilter === 'type_normal') return (a.isSystem === b.isSystem) ? 0 : a.isSystem ? 1 : -1;
+        if (catFilter === 'type_system') return (a.isSystem === b.isSystem) ? 0 : a.isSystem ? -1 : 1;
+        return 0;
+    });
 
     if (isTablet) {
         return (
@@ -220,9 +231,9 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                 </View>
 
 
-                <Modal visible={showFilter} transparent animationType="fade">
-                    <TouchableOpacity style={styles.filterOverlay} activeOpacity={1} onPress={() => setShowFilter(false)}>
-                        <View style={[styles.filterPopupBox, isTablet && { top: filterPos, right: width - 380 }]}>
+                <Modal visible={showFilter} transparent animationType="fade" statusBarTranslucent={true} hardwareAccelerated={true}>
+                    <TouchableOpacity style={[styles.filterOverlay, { width: 3000, height: 3000, top: -1000, left: -1000 }]} activeOpacity={1} onPress={() => setShowFilter(false)}>
+                        <View style={[styles.filterPopupBox, isTablet && { top: filterPos.top + 1000, left: filterPos.left + 1000, right: 'auto' }]}>
                             <Text style={styles.filterGroupTitle}>Sắp xếp Danh Mục</Text>
                             <RadioItem label="Tên (A → Z)" selected={catFilter === 'az'} onPress={() => setCatFilter('az')} />
                             <RadioItem label="Nhiều sản phẩm" selected={catFilter === 'count_desc'} onPress={() => setCatFilter('count_desc')} />
@@ -379,9 +390,9 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
             </ScrollView>
 
             {/* Filter Modal */}
-            <Modal visible={showFilter} transparent animationType="fade">
-                <TouchableOpacity style={styles.filterOverlay} activeOpacity={1} onPress={() => setShowFilter(false)}>
-                    <View style={styles.filterPopupBox}>
+            <Modal visible={showFilter} transparent animationType="fade" statusBarTranslucent={true} hardwareAccelerated={true}>
+                <TouchableOpacity style={[styles.filterOverlay, { width: 3000, height: 3000, top: -1000, left: -1000 }]} activeOpacity={1} onPress={() => setShowFilter(false)}>
+                    <View style={[styles.filterPopupBox, { top: 1000, left: 1000 }]}>
                         <Text style={styles.filterGroupTitle}>Sắp xếp Danh Mục</Text>
                         <RadioItem label="Tên (A → Z)" selected={catFilter === 'az'} onPress={() => setCatFilter('az')} />
                         <RadioItem label="Nhiều sản phẩm" selected={catFilter === 'count_desc'} onPress={() => setCatFilter('count_desc')} />

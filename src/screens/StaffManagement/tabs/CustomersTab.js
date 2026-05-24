@@ -136,24 +136,19 @@ const CustomersTab = ({ onModalStateChange, showToast }) => {
 
     return (
         <View style={{ flex: 1 }}>
-            <ScrollView 
-                contentContainerStyle={isTablet ? { paddingHorizontal: 32, paddingBottom: 120 } : { paddingHorizontal: 16, paddingBottom: 120 }} 
-                showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8BA367']} />}
-            >
-                <View style={isTablet ? styles.tableTopBar : { marginTop: 16, marginBottom: 8, flexDirection: 'row', gap: 10 }}>
-                    <View style={isTablet ? styles.tableTopRight : { flex: 1, flexDirection: 'row', gap: 10 }}>
-                        <View style={[styles.cardSearchInputWrap, !isTablet && { flex: 1, width: 'auto', borderRadius: 12 }]}>
-                            <SearchIcon width={18} height={18} />
-                            <TextInput 
-                                style={styles.cardSearchInput} placeholder="Tìm tên hoặc SĐT khách hàng..."
-                                placeholderTextColor="#9CA3AF" value={custSearchQuery} onChangeText={setCustSearchQuery}
-                            />
+            {isTablet ? (
+                <View style={{ flex: 1, paddingHorizontal: 32, paddingBottom: 32 }}>
+                    <View style={styles.tableTopBar}>
+                        <View style={styles.tableTopRight}>
+                            <View style={styles.cardSearchInputWrap}>
+                                <SearchIcon width={18} height={18} />
+                                <TextInput 
+                                    style={styles.cardSearchInput} placeholder="Tìm tên hoặc SĐT khách hàng..."
+                                    placeholderTextColor="#9CA3AF" value={custSearchQuery} onChangeText={setCustSearchQuery}
+                                />
+                            </View>
+                            <TouchableOpacity style={styles.cardFilterBtn} onPress={onFilterPress}><FilterIcon width={18} height={18} /></TouchableOpacity>
                         </View>
-                        <TouchableOpacity style={[styles.cardFilterBtn, !isTablet && { borderRadius: 12 }]} onPress={onFilterPress}><FilterIcon width={18} height={18} /></TouchableOpacity>
-                    </View>
-
-                    {isTablet && (
                         <TouchableOpacity 
                             style={styles.addCustomerBtn} 
                             activeOpacity={0.8}
@@ -162,11 +157,9 @@ const CustomersTab = ({ onModalStateChange, showToast }) => {
                             <PlusIcon color="#FFF" width={18} height={18} />
                             <Text style={styles.addCustomerText}>Thêm mới khách hàng</Text>
                         </TouchableOpacity>
-                    )}
-                </View>
+                    </View>
 
-                {isTablet ? (
-                    <View>
+                    <View style={{ flex: 1, overflow: 'hidden' }}>
                         <View style={styles.tableHeaderRow}>
                             <Text style={[styles.thCell, { flex: 2 }]}>Khách hàng</Text>
                             <Text style={[styles.thCell, { flex: 1.5 }]}>Số điện thoại</Text>
@@ -174,36 +167,59 @@ const CustomersTab = ({ onModalStateChange, showToast }) => {
                             <Text style={[styles.thCell, { flex: 1.5 }]}>Điểm tích lũy</Text>
                             <Text style={[styles.thCell, { width: 60, textAlign: 'center' }]}>Thao tác</Text>
                         </View>
-                        {filteredCustomers.map(cust => {
-                            let isVang = cust.hangKhachHang === 'VANG';
-                            let isBac = cust.hangKhachHang === 'BAC';
-                            let badgeColor = isVang ? "#CA8A04" : (isBac ? "#64748B" : "#8BA367");
-                            let badgeType = isVang ? 'Vang' : (isBac ? 'Bac' : 'Moi');
+                        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={true} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8BA367']} />}>
+                            <View style={{ paddingBottom: 20 }}>
+                                {filteredCustomers.map(cust => {
+                                    let isVang = cust.hangKhachHang === 'VANG';
+                                    let isBac = cust.hangKhachHang === 'BAC';
+                                    let badgeColor = isVang ? "#CA8A04" : (isBac ? "#64748B" : "#8BA367");
+                                    let badgeType = isVang ? 'Vang' : (isBac ? 'Bac' : 'Moi');
 
-                            return (
-                                <TouchableOpacity key={cust.id} style={styles.tableRow} activeOpacity={0.7} onPress={() => setSelectedDetail(cust)}>
-                                    <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center' }}>
-                                        <View style={styles.avatarWrap}>
-                                            <View style={[styles.avatarImg, { backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }]}><Text style={styles.avatarInitials}>{cust.hoTen.charAt(0)}</Text></View>
-                                        </View>
-                                        <Text style={styles.tdCellBold} numberOfLines={1}>{cust.hoTen}</Text>
-                                    </View>
-                                    <Text style={[styles.tdCell, { flex: 1.5 }]}>{cust.sdt}</Text>
-                                    <View style={{ flex: 1.5, flexDirection: 'row' }}>
-                                        <View style={[styles.custBadge, styles[`custBadge${badgeType}`]]}>
-                                            <BadgeIcon color={badgeColor} size={14} />
-                                            <Text style={styles[`custBadgeText${badgeType}`]}>{TIER_LABEL_MAP[cust.hangKhachHang] || cust.hangKhachHang}</Text>
-                                        </View>
-                                    </View>
-                                    <Text style={[styles.tdCell, { flex: 1.5, fontWeight: '700', color: '#10B981' }]}>{cust.points} điểm</Text>
-                                    <View style={{ width: 60, alignItems: 'center' }}>
-                                        <TouchableOpacity style={styles.moreBtn} onPress={(e) => onMorePress(e, cust)}><MoreIcon /></TouchableOpacity>
-                                    </View>
-                                </TouchableOpacity>
-                            );
-                        })}
+                                    return (
+                                        <TouchableOpacity key={cust.id} style={styles.tableRow} activeOpacity={0.7} onPress={() => setSelectedDetail(cust)}>
+                                            <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center' }}>
+                                                <View style={styles.avatarWrap}>
+                                                    <View style={[styles.avatarImg, { backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' }]}><Text style={styles.avatarInitials}>{cust.hoTen.charAt(0)}</Text></View>
+                                                </View>
+                                                <Text style={styles.tdCellBold} numberOfLines={1}>{cust.hoTen}</Text>
+                                            </View>
+                                            <Text style={[styles.tdCell, { flex: 1.5 }]}>{cust.sdt}</Text>
+                                            <View style={{ flex: 1.5, flexDirection: 'row' }}>
+                                                <View style={[styles.custBadge, styles[`custBadge${badgeType}`]]}>
+                                                    <BadgeIcon color={badgeColor} size={14} />
+                                                    <Text style={styles[`custBadgeText${badgeType}`]}>{TIER_LABEL_MAP[cust.hangKhachHang] || cust.hangKhachHang}</Text>
+                                                </View>
+                                            </View>
+                                            <Text style={[styles.tdCell, { flex: 1.5, fontWeight: '700', color: '#10B981' }]}>{cust.points} điểm</Text>
+                                            <View style={{ width: 60, alignItems: 'center' }}>
+                                                <TouchableOpacity style={styles.moreBtn} onPress={(e) => onMorePress(e, cust)}><MoreIcon /></TouchableOpacity>
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        </ScrollView>
                     </View>
-                ) : (
+                </View>
+            ) : (
+                <ScrollView 
+                    contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }} 
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8BA367']} />}
+                >
+                    <View style={{ marginTop: 16, marginBottom: 8, flexDirection: 'row', gap: 10 }}>
+                        <View style={{ flex: 1, flexDirection: 'row', gap: 10 }}>
+                            <View style={[styles.cardSearchInputWrap, { flex: 1, width: 'auto', borderRadius: 12 }]}>
+                                <SearchIcon width={18} height={18} />
+                                <TextInput 
+                                    style={styles.cardSearchInput} placeholder="Tìm tên hoặc SĐT khách hàng..."
+                                    placeholderTextColor="#9CA3AF" value={custSearchQuery} onChangeText={setCustSearchQuery}
+                                />
+                            </View>
+                            <TouchableOpacity style={[styles.cardFilterBtn, { borderRadius: 12 }]} onPress={onFilterPress}><FilterIcon width={18} height={18} /></TouchableOpacity>
+                        </View>
+                    </View>
+
                     <View>
                         {filteredCustomers.length > 0 ? filteredCustomers.map(cust => {
                             let isVang = cust.hangKhachHang === 'VANG';
@@ -250,8 +266,8 @@ const CustomersTab = ({ onModalStateChange, showToast }) => {
                             </View>
                         )}
                     </View>
-                )}
-            </ScrollView>
+                </ScrollView>
+            )}
 
             {/* FAB Add (mobile only) */}
             {!isTablet && (

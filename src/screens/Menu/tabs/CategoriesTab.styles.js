@@ -37,7 +37,7 @@ export default StyleSheet.create({
     moreButton: { padding: 4 },
 
     /* Modals & Overlays */
-    filterOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
+    filterOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
     filterPopupBox: {
         position: 'absolute', top: 180, right: 16, width: 220,
         backgroundColor: 'white', borderRadius: 16, paddingVertical: 8,

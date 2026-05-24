@@ -1,72 +1,88 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar, ImageBackground, useWindowDimensions, Dimensions, TextInput, Modal, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar, ImageBackground, useWindowDimensions, TextInput, Modal, Platform } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Path, Circle } from 'react-native-svg';
+import DatePicker from 'react-native-date-picker';
 import styles from './AIHistory.styles';
 import Header from '../../components/Header';
-import Sidebar from '../../components/Sidebar';
-import BottomNav from '../../components/BottomNav';
 import aiStrategyApi from '../../api/aiStrategyApi';
 import NotificationModal from '../../components/NotificationModal';
 import SettingsModal from '../../components/SettingsModal';
 
 const BG_IMAGE = require('../../assets/images/matcha_background.png');
 
-// Icons
+// ─── Icons ────────────────────────────────────────────────────────────────────
 const TrendUpIcon = ({ color = "#10B981" }) => (
   <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <Path d="M21 7L13 15L9 11L3 17M21 7H15M21 7V13" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M21 7L13 15L9 11L3 17M21 7H15M21 7V13" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <Circle cx="12" cy="12" r="3" stroke="#1B2A15" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </Svg>
 );
 
-const LightbulbIcon = ({ color = "#F59E0B" }) => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <Path d="M9 18H15M10 21H14M12 3C7.58172 3 4 6.58172 4 11C4 13.5 5.5 15.5 7 16.5V17C7 17.5523 7.44772 18 8 18H16C16.5523 18 17 17.5523 17 17V16.5C18.5 15.5 20 13.5 20 11C20 6.58172 16.4183 3 12 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </Svg>
-);
-
-const SparklesIcon = ({ size = 20, color = "#8BA367" }) => (
+const LightbulbIcon = ({ color = "#F59E0B", size = 24 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M12 3l1.91 5.81c.21.64.73 1.16 1.37 1.37L21 12l-5.72 1.82c-.64.21-1.16.73-1.37 1.37L12 21l-1.91-5.81c-.21-.64-.73-1.16-1.37-1.37L3 12l5.72-1.82c.64-.21 1.16-.73 1.37-1.37L12 3z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </Svg>
 );
 
-const AlertCircleIcon = ({ color = "#EF4444" }) => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+const AlertCircleIcon = ({ color = "#EF4444", size = 24 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" />
-    <Path d="M12 8V12M12 16H12.01" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M12 8V12" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    <Circle cx="12" cy="16" r="1" fill={color} />
   </Svg>
 );
 
-const ChevronDownIcon = ({ color = "#64748B" }) => (
-  <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-    <Path d="M6 9l6 6 6-6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+const SparklesIcon = ({ color = "#8BA367", size = 24 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" fill={color} stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+    <Path d="M18 17L19 19.5L21.5 20.5L19 21.5L18 24L17 21.5L14.5 20.5L17 19.5L18 17Z" fill={color} stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
   </Svg>
 );
 
-const SearchIcon = () => (
-  <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-    <Circle cx="11" cy="11" r="8" stroke="#94A3B8" strokeWidth="2" />
-    <Path d="M21 21l-4.35-4.35" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+const ChevronDownIcon = ({ color = "#64748B", size = 24 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M6 9L12 15L18 9" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </Svg>
 );
 
-const FilterIcon = () => (
-  <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-    <Path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="#1B2A15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+const SearchIcon = ({ color = "#9CA3AF", size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="11" cy="11" r="8" stroke={color} strokeWidth="2" />
+    <Path d="M21 21L16.65 16.65" stroke={color} strokeWidth="2" strokeLinecap="round" />
   </Svg>
 );
 
-const SettingsIcon = () => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <Path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" stroke="#1B2A15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <Circle cx="12" cy="12" r="3" stroke="#1B2A15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+const FilterIcon = ({ color = "#64748B", size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M3 6H21M7 12H17M10 18H14" stroke={color} strokeWidth="2" strokeLinecap="round" />
   </Svg>
 );
 
+const CalendarIcon = ({ color = "#64748B", size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M8 2V6M16 2V6M3 10H21M5 4H19C20.1 4 21 4.9 21 6V20C21 21.1 20.1 22 19 22H5C3.9 22 3 21.1 3 20V6C3 4.9 3.9 4 5 4Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const XIcon = ({ color = "#64748B", size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 6L6 18M6 6L18 18" stroke={color} strokeWidth="2" strokeLinecap="round" />
+  </Svg>
+);
+
+const SettingsIcon = ({ color = "#1B2A15", size = 24 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1-1-1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 export default function AIHistory({ onNavigate }) {
-  // 1. ALL HOOKS AT THE TOP
   const { width: windowWidth } = useWindowDimensions();
+  const isTablet = windowWidth >= 768;
+
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
@@ -75,25 +91,53 @@ export default function AIHistory({ onNavigate }) {
   const [showNotiModal, setShowNotiModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        setLoading(true);
-        const today = new Date().toISOString().split('T')[0];
-        const res = await aiStrategyApi.getHistory(today);
-        setHistory(res || []);
-      } catch (error) {
-        console.error('Fetch history error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchHistory();
+  // Filter date state
+  const [filterDate, setFilterDate] = useState(null); // null = show all
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
+
+  // ── Fetch ────────────────────────────────────────────────────────────────────
+  const fetchHistory = useCallback(async (dateStr = null) => {
+    try {
+      setLoading(true);
+      const res = await aiStrategyApi.getHistory(dateStr); // null → no ?ngay param → all
+      setHistory(res || []);
+    } catch (error) {
+      console.error('Fetch history error:', error);
+      setHistory([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // 2. LOGIC
-  const isTablet = windowWidth >= 768;
+  useEffect(() => {
+    fetchHistory(null); // load all on mount
+  }, [fetchHistory]);
 
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+  const formatDateYMD = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  const formatDateDisplay = (date) =>
+    date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  const handleApplyFilter = () => {
+    const ymd = formatDateYMD(tempDate);
+    setFilterDate(tempDate);
+    setShowDatePicker(false);
+    fetchHistory(ymd);
+  };
+
+  const handleClearFilter = () => {
+    setFilterDate(null);
+    fetchHistory(null);
+  };
+
+  // ── Insight Renderer ─────────────────────────────────────────────────────────
   const renderAIInsights = (text) => {
     if (!text) return null;
     const blocks = text.split('\n\n').filter(b => b.trim() !== '');
@@ -125,31 +169,20 @@ export default function AIHistory({ onNavigate }) {
         let title = '';
         let desc = '';
         const match = firstLine.match(/^\*\s*\*\*(.*?)\*\*:?\s*(.*)$/);
-
-        if (match) {
-          title = match[1];
-          desc = match[2];
-        } else {
-          title = firstLine.replace(/^\*\s*/, '').replace(/\*\*/g, '');
-        }
+        if (match) { title = match[1]; desc = match[2]; }
+        else { title = firstLine.replace(/^\*\s*/, '').replace(/\*\*/g, ''); }
 
         let IconComponent = LightbulbIcon;
         let iconBg = 'rgba(245, 158, 11, 0.13)';
         let iconColor = '#F59E0B';
-
         const lowerTitle = title.toLowerCase();
+
         if (lowerTitle.includes('doanh thu') || lowerTitle.includes('đơn hàng') || lowerTitle.includes('tăng trưởng')) {
-          IconComponent = TrendUpIcon;
-          iconBg = 'rgba(16, 185, 129, 0.13)';
-          iconColor = '#10B981';
+          IconComponent = TrendUpIcon; iconBg = 'rgba(16, 185, 129, 0.13)'; iconColor = '#10B981';
         } else if (lowerTitle.includes('chậm') || lowerTitle.includes('cảnh báo') || lowerTitle.includes('tồn kho')) {
-          IconComponent = AlertCircleIcon;
-          iconBg = 'rgba(239, 68, 68, 0.13)';
-          iconColor = '#EF4444';
+          IconComponent = AlertCircleIcon; iconBg = 'rgba(239, 68, 68, 0.13)'; iconColor = '#EF4444';
         } else if (lowerTitle.includes('combo') || lowerTitle.includes('khuyến mãi') || lowerTitle.includes('gợi ý') || lowerTitle.includes('giải pháp')) {
-          IconComponent = SparklesIcon;
-          iconBg = 'rgba(139, 163, 103, 0.15)';
-          iconColor = '#8BA367';
+          IconComponent = SparklesIcon; iconBg = 'rgba(139, 163, 103, 0.15)'; iconColor = '#8BA367';
         }
 
         const nestedLines = lines.slice(1).map(l => l.trim()).filter(l => l.startsWith('*'));
@@ -162,7 +195,6 @@ export default function AIHistory({ onNavigate }) {
             <View style={styles.insightTextWrap}>
               <Text style={styles.insightTitle}>{title}</Text>
               {desc ? <Text style={styles.insightDesc}>{renderBold(desc)}</Text> : null}
-
               {nestedLines.length > 0 && (
                 <View style={{ marginTop: desc ? 12 : 6 }}>
                   {nestedLines.map((nl, idx) => (
@@ -188,14 +220,29 @@ export default function AIHistory({ onNavigate }) {
     });
   };
 
-  const renderHistoryItem = (item) => {
+  // ── History Item ─────────────────────────────────────────────────────────────
+  const renderHistoryItem = (item, index) => {
     const isExpanded = expandedId === item.idNhatKy;
     const dateObj = new Date(item.thoiGianTao);
     const timeStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     const dateStr = dateObj.toLocaleDateString('vi-VN');
 
+    // Alternate between soft green and warm cream gradients
+    const gradients = [
+      ['#F0F7EC', '#FAFDF8'],   // sage green tint
+      ['#FFF8EF', '#FFFCF9'],   // warm cream tint
+      ['#EFF6FF', '#F8FBFF'],   // soft blue tint
+    ];
+    const gradient = gradients[index % gradients.length];
+
     return (
-      <View key={item.idNhatKy} style={styles.historyCard}>
+      <LinearGradient
+        key={item.idNhatKy}
+        colors={gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.historyCard, { backgroundColor: undefined }]}
+      >
         <TouchableOpacity
           style={styles.cardHeader}
           onPress={() => setExpandedId(isExpanded ? null : item.idNhatKy)}
@@ -207,7 +254,7 @@ export default function AIHistory({ onNavigate }) {
             </View>
             <View>
               <Text style={styles.cardTitle}>Bản ghi nhật ký #{item.idNhatKy}</Text>
-              <Text style={styles.cardDate}>{timeStr} - {dateStr}</Text>
+              <Text style={styles.cardDate}>{timeStr} · {dateStr}</Text>
             </View>
           </View>
           <View style={[styles.expandButton, isExpanded && { transform: [{ rotate: '180deg' }] }]}>
@@ -220,23 +267,112 @@ export default function AIHistory({ onNavigate }) {
             {renderAIInsights(item.loiKhuyenAi)}
           </View>
         )}
-      </View>
+      </LinearGradient>
     );
   };
 
   const filteredHistory = history.filter(item =>
-    item.loiKhuyenAi.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.idNhatKy.toString().includes(searchQuery)
+    item.loiKhuyenAi?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.idNhatKy?.toString().includes(searchQuery)
   );
 
-  // 3. SINGLE RETURN
+  // ── Filter Bar ───────────────────────────────────────────────────────────────
+  const renderFilterBar = () => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+      {/* Compact search — fixed width, left-aligned */}
+      <View style={{ width: 280, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 10, height: 38, borderWidth: 1, borderColor: '#E5E7EB' }}>
+        <SearchIcon size={16} />
+        <TextInput
+          style={{ flex: 1, marginLeft: 7, fontSize: 13, color: '#1E2939', padding: 0 }}
+          placeholder="Tìm kiếm nhật ký..."
+          placeholderTextColor="#9CA3AF"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
+      {/* Filter date pill */}
+      {filterDate ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', borderRadius: 10, paddingHorizontal: 10, height: 36, borderWidth: 1, borderColor: '#8BA367', gap: 6 }}>
+          <CalendarIcon color="#4A7C59" size={15} />
+          <Text style={{ fontSize: 12, fontWeight: '700', color: '#4A7C59' }}>{formatDateDisplay(filterDate)}</Text>
+          <TouchableOpacity onPress={handleClearFilter} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <XIcon color="#4A7C59" size={13} />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity
+          onPress={() => setShowDatePicker(true)}
+          style={{ width: 36, height: 36, backgroundColor: '#F3F4F6', borderRadius: 10, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' }}
+        >
+          <FilterIcon size={16} />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  // ── List ─────────────────────────────────────────────────────────────────────
+  const renderList = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#8BA367" />
+          <Text style={{ marginTop: 16, color: '#64748B' }}>Đang tải lịch sử...</Text>
+        </View>
+      );
+    }
+    if (filteredHistory.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <SparklesIcon color="#C4D6A4" size={48} />
+          <Text style={[styles.emptyText, { marginTop: 16 }]}>
+            {searchQuery
+              ? 'Không tìm thấy kết quả phù hợp.'
+              : filterDate
+                ? `Không có nhật ký nào vào ngày ${formatDateDisplay(filterDate)}.`
+                : 'Chưa có bản ghi nhật ký nào.'}
+          </Text>
+          {filterDate && (
+            <TouchableOpacity onPress={handleClearFilter} style={{ marginTop: 12, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#8BA367', borderRadius: 12 }}>
+              <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 14 }}>Xem tất cả lịch sử</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      );
+    }
+    return filteredHistory.map((item, index) => renderHistoryItem(item, index));
+  };
+
+  // ── Date Picker Modal ────────────────────────────────────────────────────────
+  const renderDatePickerModal = () => (
+    <DatePicker
+      modal
+      open={showDatePicker}
+      date={tempDate}
+      mode="date"
+      locale="vi"
+      maximumDate={new Date()}
+      title="Chọn ngày lọc"
+      confirmText="Áp dụng"
+      cancelText="Hủy"
+      onConfirm={(date) => {
+        setTempDate(date);
+        const ymd = formatDateYMD(date);
+        setFilterDate(date);
+        setShowDatePicker(false);
+        fetchHistory(ymd);
+      }}
+      onCancel={() => setShowDatePicker(false)}
+    />
+  );
+
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <View style={isTablet ? styles.tabletContainer : styles.mainContainer}>
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
       {isTablet ? (
         <>
-          {/* Tablet View */}
           <View style={styles.absoluteFill}>
             <View style={styles.decorativeBlob1} />
             <View style={styles.decorativeBlob2} />
@@ -244,16 +380,16 @@ export default function AIHistory({ onNavigate }) {
             <View style={styles.frostyOverlay} />
           </View>
 
-          <Sidebar
-            activeRoute="AIHistory"
-            onNavigate={onNavigate}
-            isCollapsed={isSidebarCollapsed}
-            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          />
-
           <View style={styles.tabletMain}>
+            {/* Header */}
             <View style={styles.tabletHeader}>
-              <Text style={styles.tabletHeaderTitle}>Lịch sử nhật ký AI</Text>
+              <View>
+                <Text style={styles.tabletHeaderTitle}>Lịch sử nhật ký AI</Text>
+                <Text style={{ fontSize: 14, color: '#7A8B70', marginTop: 2 }}>
+                  {filterDate ? `Lọc: ${formatDateDisplay(filterDate)}` : 'Toàn bộ lịch sử'}
+                  {' · '}{filteredHistory.length} bản ghi
+                </Text>
+              </View>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <TouchableOpacity onPress={() => setShowNotiModal(true)} style={styles.iconBtn}>
                   <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -268,98 +404,33 @@ export default function AIHistory({ onNavigate }) {
               </View>
             </View>
 
-            <View style={styles.searchRow}>
-              <View style={styles.searchInputWrapper}>
-                <SearchIcon />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Tìm kiếm nhật ký..."
-                  placeholderTextColor="#9CA3AF"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-              </View>
-              <TouchableOpacity style={styles.filterButton}>
-                <FilterIcon />
-              </TouchableOpacity>
+            {/* Filter bar */}
+            <View style={{ paddingHorizontal: 32, paddingBottom: 8 }}>
+              {renderFilterBar()}
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-              {/* <View style={{ marginBottom: 24 }}>
-                        <Text style={{ fontSize: 28, fontWeight: '800', color: '#1B2A15' }}>Nhật ký AI</Text>
-                        <Text style={{ fontSize: 16, color: '#64748B', marginTop: 4 }}>Lưu trữ các phân tích và chiến lược từ hệ thống</Text>
-                    </View> */}
-
-              {loading ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#8BA367" />
-                  <Text style={{ marginTop: 16, color: '#64748B' }}>Đang tải lịch sử...</Text>
-                </View>
-              ) : filteredHistory.length > 0 ? (
-                <View style={styles.listContainer}>
-                  {filteredHistory.map(renderHistoryItem)}
-                </View>
-              ) : (
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>{searchQuery ? 'Không tìm thấy kết quả phù hợp.' : 'Chưa có bản ghi nhật ký nào trong hôm nay.'}</Text>
-                </View>
-              )}
+            <ScrollView flex={1} showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+              {renderList()}
             </ScrollView>
           </View>
         </>
       ) : (
         <>
-          {/* Mobile View */}
           <Header title="Lịch sử nhật ký AI" unreadCount={0} onNotificationPress={() => setShowNotiModal(true)} onAvatarPress={() => setShowSettingsModal(true)} />
-
-          <View style={{ flex: 1, flexDirection: 'row' }}>
-            <Sidebar
-              activeRoute="AIHistory"
-              onNavigate={onNavigate}
-              isCollapsed={isSidebarCollapsed}
-              onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            />
-
-            <View style={{ flex: 1 }}>
-              <ImageBackground source={BG_IMAGE} style={{ flex: 1 }} imageStyle={{ opacity: 0.03 }}>
-                <View style={{ padding: 16 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 10 }}>
-                    <View style={{ flex: 1, height: 44, backgroundColor: '#F3F4F6', borderRadius: 12, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, borderWidth: 1, borderColor: '#E5E7EB' }}>
-                      <SearchIcon />
-                      <TextInput
-                        style={{ flex: 1, marginLeft: 8, fontSize: 14, color: '#1E2939' }}
-                        placeholder="Tìm kiếm..."
-                        placeholderTextColor="#9CA3AF"
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                      />
-                    </View>
-                    <TouchableOpacity style={{ width: 44, height: 44, backgroundColor: '#F3F4F6', borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' }}>
-                      <FilterIcon />
-                    </TouchableOpacity>
-                  </View>
-
-                  {loading ? (
-                    <View style={styles.loadingContainer}>
-                      <ActivityIndicator size="large" color="#8BA367" />
-                    </View>
-                  ) : filteredHistory.length > 0 ? (
-                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContainer}>
-                      {filteredHistory.map(renderHistoryItem)}
-                    </ScrollView>
-                  ) : (
-                    <View style={styles.emptyContainer}>
-                      <Text style={styles.emptyText}>Chưa có bản ghi nào.</Text>
-                    </View>
-                  )}
-                </View>
-              </ImageBackground>
-            </View>
+          <View style={{ flex: 1 }}>
+            <ImageBackground source={BG_IMAGE} style={{ flex: 1 }} imageStyle={{ opacity: 0.03 }}>
+              <View style={{ padding: 16, flex: 1 }}>
+                {renderFilterBar()}
+                <ScrollView flex={1} showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContainer}>
+                  {renderList()}
+                </ScrollView>
+              </View>
+            </ImageBackground>
           </View>
-          <BottomNav currentScreen="AIHistory" onNavigate={onNavigate} />
         </>
       )}
 
+      {renderDatePickerModal()}
       <NotificationModal visible={showNotiModal} onClose={() => setShowNotiModal(false)} />
       <SettingsModal visible={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
     </View>

@@ -22,7 +22,7 @@ export default StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 20,
   },
-  
+
   // -- Stat Card --
   statCard: {
     flex: 1, // Add this to make them equal height
@@ -85,7 +85,7 @@ export default StyleSheet.create({
   iconBoxPurple: {
     backgroundColor: 'rgba(173, 70, 255, 0.1)',
   },
-  
+
   // -- AI Button --
   aiWideButtonWrap: {
     marginTop: 12,
@@ -143,11 +143,10 @@ export default StyleSheet.create({
   },
   segmentControl: {
     flexDirection: 'row',
-    marginBottom: 20,
     justifyContent: 'space-between',
   },
   segmentButton: {
-    flex: 1,
+    paddingHorizontal: 16,
     height: 36,
     borderRadius: 16,
     justifyContent: 'center',
@@ -171,7 +170,7 @@ export default StyleSheet.create({
   segmentTextActive: {
     color: 'white',
   },
-  
+
   // -- Chart Implementation --
   chartArea: {
     height: 220,
@@ -219,32 +218,33 @@ export default StyleSheet.create({
     borderTopLeftRadius: 6,
     borderTopRightRadius: 6,
   },
-  
+
   // -- AI Modal --
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   modalCard: {
     width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 32,
+    maxWidth: 800,
+    backgroundColor: 'rgba(255, 255, 255, 0.97)',
+    borderRadius: 24,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.5)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 15 },
-    shadowOpacity: 0.3,
-    shadowRadius: 30,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
   },
   modalHeader: {
-    padding: 24,
+    padding: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   modalHeaderLeft: {
     flexDirection: 'row',
@@ -252,16 +252,16 @@ export default StyleSheet.create({
     flex: 1,
   },
   modalHeaderTextContainer: {
-    marginLeft: 16,
+    marginLeft: 12,
   },
   modalTitle: {
     color: 'white',
-    fontSize: 24,
+    fontSize: 21,
     fontWeight: '700',
   },
   modalSubtitle: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 13,
     marginTop: 2,
   },
   closeButton: {
@@ -273,18 +273,18 @@ export default StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    padding: 24,
-    paddingTop: 16,
+    padding: 20,
+    paddingTop: 14,
   },
   insightCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: 24,
-    padding: 16,
+    backgroundColor: '#FAFCF8',
+    borderRadius: 16,
+    padding: 14,
     flexDirection: 'row',
     alignItems: 'flex-start',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-    marginBottom: 16,
+    borderColor: 'rgba(139, 163, 103, 0.15)',
+    marginBottom: 12,
   },
   insightIconWrap: {
     width: 48,
@@ -409,6 +409,234 @@ export default StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
     lineHeight: 20,
+  },
+
+  // -- Section 2 (Thống kê chi tiết) Tablet --
+  section2Container: {
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    marginTop: 20,
+  },
+  toolbarRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  toolbarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  datePillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+  },
+  datePillText: {
+    marginLeft: 8,
+    color: '#1B2A15',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  bottomRowContainer: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+  bottomColLeft: {
+    flex: 5.5,
+    flexDirection: 'column',
+    gap: 20,
+  },
+  bottomColRight: {
+    flex: 4.5,
+    flexDirection: 'column',
+  },
+  microCardsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  microCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+  },
+  microCardContent: {
+    flex: 1,
+  },
+  microCardLabel: {
+    fontSize: 13,
+    color: '#4A5565',
+    marginBottom: 8,
+  },
+  microCardValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1B2A15',
+  },
+  decorativeLeaf: {
+    position: 'absolute',
+  },
+  tabletStatCardWrapLeft: {
+    width: '33.33%',
+    paddingHorizontal: 8,
+  },
+  tabletStatCardWrapMiddle: {
+    width: '33.33%',
+    paddingHorizontal: 8,
+  },
+  tabletStatCardWrapRight: {
+    width: '33.33%',
+    paddingHorizontal: 8,
+  },
+  todayCardGradient: {
+    flex: 1,
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 4,
+  },
+  todayCardLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 8,
+  },
+  todayCardValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  todayCardValue: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  todayCardGrowth: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#059669',
+    marginLeft: 8,
+  },
+  todayCardCompare: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 4,
+  },
+  innerChartCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+  },
+  innerCardTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 12,
+  },
+  aiCapsuleBtn: {
+    marginTop: 12,
+    borderRadius: 16,
+    shadowColor: '#8BA367',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
+    overflow: 'hidden',
+  },
+  aiBtnGradient: {
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiCapsuleBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  mobileSectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1B2A15',
+    marginBottom: 16,
+  },
+  listRowItem: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  listRowRank: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#4A5565',
+    width: 24,
+  },
+  listRowName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1B2A15',
+    marginRight: 12,
+  },
+  listRowQty: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#059669',
+  },
+  iconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  innerChartCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    marginHorizontal: -18,
+    marginBottom: -18,
+    overflow: 'hidden',
+  },
+  innerCardTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1B2A15',
+    marginBottom: 8,
   }
 });
 

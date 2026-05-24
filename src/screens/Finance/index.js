@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, useWindowDimensions, ImageBackground, StyleSheet } from 'react-native';
 import { Svg, Path, Circle } from 'react-native-svg';
 import Header from '../../components/Header';
-import BottomNav from '../../components/BottomNav';
-import Sidebar from '../../components/Sidebar';
 import styles from './Finance.styles';
 import { 
     ReceiptIcon, TaxIcon, 
@@ -11,6 +9,8 @@ import {
 } from './FinanceIcons';
 import InvoicesTab from './tabs/InvoicesTab';
 import TaxesFeesTab from './tabs/TaxesFeesTab';
+import NotificationModal from '../../components/NotificationModal';
+import SettingsModal from '../../components/SettingsModal';
 
 export default function Finance({ onNavigate }) {
     const { width } = useWindowDimensions();
@@ -19,6 +19,8 @@ export default function Finance({ onNavigate }) {
     const [activeTab, setActiveTab] = useState('invoice'); // invoice | tax
     const [isTabModalOpen, setIsTabModalOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [showNotiModal, setShowNotiModal] = useState(false);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
 
     const SettingsIcon = () => (
         <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -50,21 +52,21 @@ export default function Finance({ onNavigate }) {
                             </TouchableOpacity>
                         </View>
 
-                        <TouchableOpacity style={styles.iconBtn}>
+                        <TouchableOpacity style={styles.iconBtn} onPress={() => setShowNotiModal(true)}>
                             <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                                 <Path d="M18 8A6 6 0 0 0 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="#1B2A15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                 <Path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" stroke="#1B2A15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </Svg>
                             <View style={{ position: 'absolute', top: 6, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' }} />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.iconBtn}>
+                        <TouchableOpacity style={styles.iconBtn} onPress={() => setShowSettingsModal(true)}>
                             <SettingsIcon />
                         </TouchableOpacity>
                     </View>
                 </View>
             ) : (
                 <>
-                    <Header userName="Anna Trần" title="Tài chính & Chi phí" />
+                    <Header userName="Anna Trần" title="Tài chính & Chi phí" onNotificationPress={() => setShowNotiModal(true)} />
                     {/* Tab Switcher (Mobile) */}
                     <View style={styles.tabRow}>
                         <TouchableOpacity
@@ -91,7 +93,9 @@ export default function Finance({ onNavigate }) {
                 <TaxesFeesTab onModalStateChange={setIsTabModalOpen} />
             )}
 
-            {!isTablet && !isTabModalOpen && <BottomNav currentScreen="Finance" onNavigate={onNavigate} />}
+
+            <NotificationModal visible={showNotiModal} onClose={() => setShowNotiModal(false)} />
+            <SettingsModal visible={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
         </View>
     );
 
@@ -113,12 +117,6 @@ export default function Finance({ onNavigate }) {
                         <View style={{ position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(252, 211, 77, 0.02)', bottom: 50, right: '15%' }} />
                     </View>
 
-                    <Sidebar 
-                        activeRoute="Finance" 
-                        onNavigate={onNavigate} 
-                        isCollapsed={isSidebarCollapsed}
-                        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                    />
                     <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.4)' }}>
                         {renderContent()}
                     </View>

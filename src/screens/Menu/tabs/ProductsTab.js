@@ -6,17 +6,20 @@ import styles from './ProductsTab.styles';
 import { SearchIcon, FilterIcon, MoreIcon, EditIcon, TrashIcon, CloseIcon, PlusIcon } from '../MenuIcons';
 import productApi from '../../../api/productApi';
 import { RefreshControl, Alert } from 'react-native';
+import { useNotifications } from '../../../context/NotificationContext';
 
 const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
     const { width, height } = useWindowDimensions();
+    const { showToast } = useNotifications();
     const isTablet = width >= 768;
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilter, setShowFilter] = useState(false);
-    const [filterPos, setFilterPos] = useState(0);
+    const [filterPos, setFilterPos] = useState({ top: 0, left: 0 });
     const [prodFilter, setProdFilter] = useState('newest'); 
+    const [filterCategory, setFilterCategory] = useState('Tất cả');
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [actionMenuContext, setActionMenuContext] = useState(null);
 
@@ -45,7 +48,7 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
             }
         } catch (error) {
             console.error('Fetch products error:', error);
-            Alert.alert('Lỗi', 'Không thể tải danh sách sản phẩm');
+            showToast('Lỗi', 'Không thể tải danh sách sản phẩm', 'error');
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -76,8 +79,9 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                             fetchProducts();
                             setActionMenuContext(null);
                             setSelectedProduct(null);
+                            showToast('Thành công', 'Đã xóa sản phẩm', 'success');
                         } catch (error) {
-                            Alert.alert('Lỗi', 'Không thể xóa sản phẩm này');
+                            showToast('Lỗi', 'Không thể xóa sản phẩm này', 'error');
                         }
                     }
                 }
@@ -106,7 +110,10 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
 
     const onFilterPress = (e) => {
         if (isTablet) {
-            setFilterPos(e.nativeEvent.pageY + 10);
+            setFilterPos({
+                top: e.nativeEvent.pageY + 10,
+                left: e.nativeEvent.pageX - 100 // Center the popup under the button
+            });
         }
         setShowFilter(true);
     };
@@ -120,7 +127,26 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
         </TouchableOpacity>
     );
 
-    const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const categories = ['Tất cả', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
+
+    const filteredProducts = products.filter(p => {
+        const matchName = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchCat = filterCategory === 'Tất cả' || p.category === filterCategory;
+        return matchName && matchCat;
+    }).sort((a, b) => {
+        if (prodFilter === 'newest') return b.id - a.id;
+        if (prodFilter === 'price_asc') {
+            const priceA = parseInt(a.price.replace(/[^\d]/g, '')) || 0;
+            const priceB = parseInt(b.price.replace(/[^\d]/g, '')) || 0;
+            return priceA - priceB;
+        }
+        if (prodFilter === 'price_desc') {
+            const priceA = parseInt(a.price.replace(/[^\d]/g, '')) || 0;
+            const priceB = parseInt(b.price.replace(/[^\d]/g, '')) || 0;
+            return priceB - priceA;
+        }
+        return 0;
+    });
 
     if (isTablet) {
         return (
@@ -198,12 +224,20 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                 </View>
 
 
-                <Modal visible={showFilter} transparent animationType="fade">
-                    <TouchableOpacity style={styles.filterOverlay} activeOpacity={1} onPress={() => setShowFilter(false)}>
-                        <View style={[styles.filterPopupBox, isTablet && { top: filterPos, right: width - 380 }]}>
+                <Modal visible={showFilter} transparent animationType="fade" statusBarTranslucent={true} hardwareAccelerated={true}>
+                    <TouchableOpacity style={[styles.filterOverlay, { width: 3000, height: 3000, top: -1000, left: -1000 }]} activeOpacity={1} onPress={() => setShowFilter(false)}>
+                        <View style={[styles.filterPopupBox, isTablet && { top: filterPos.top + 1000, left: filterPos.left + 1000, right: 'auto' }]}>
+                            <Text style={styles.filterGroupTitle}>Danh mục</Text>
+                            <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled showsVerticalScrollIndicator={true}>
+                                {categories.map(cat => (
+                                    <RadioItem key={cat} label={cat} selected={filterCategory === cat} onPress={() => setFilterCategory(cat)} />
+                                ))}
+                            </ScrollView>
+                            
+                            <View style={{ height: 1, backgroundColor: '#F1F5F9', marginVertical: 4 }} />
+                            
                             <Text style={styles.filterGroupTitle}>Sắp xếp Sản Phẩm</Text>
                             <RadioItem label="Mới nhất" selected={prodFilter === 'newest'} onPress={() => setProdFilter('newest')} />
-                            <RadioItem label="Theo Danh mục" selected={prodFilter === 'cat'} onPress={() => setProdFilter('cat')} />
                             <RadioItem label="Giá Tăng dần" selected={prodFilter === 'price_asc'} onPress={() => setProdFilter('price_asc')} />
                             <RadioItem label="Giá Giảm dần" selected={prodFilter === 'price_desc'} onPress={() => setProdFilter('price_desc')} />
                         </View>
@@ -376,12 +410,20 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
             </ScrollView>
 
             {/* Filter Modal */}
-            <Modal visible={showFilter} transparent animationType="fade">
-                <TouchableOpacity style={styles.filterOverlay} activeOpacity={1} onPress={() => setShowFilter(false)}>
-                    <View style={styles.filterPopupBox}>
+            <Modal visible={showFilter} transparent animationType="fade" statusBarTranslucent={true} hardwareAccelerated={true}>
+                <TouchableOpacity style={[styles.filterOverlay, { width: 3000, height: 3000, top: -1000, left: -1000 }]} activeOpacity={1} onPress={() => setShowFilter(false)}>
+                    <View style={[styles.filterPopupBox, { top: 1000, left: 1000 }]}>
+                        <Text style={styles.filterGroupTitle}>Danh mục</Text>
+                        <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled showsVerticalScrollIndicator={true}>
+                            {categories.map(cat => (
+                                <RadioItem key={cat} label={cat} selected={filterCategory === cat} onPress={() => setFilterCategory(cat)} />
+                            ))}
+                        </ScrollView>
+                        
+                        <View style={{ height: 1, backgroundColor: '#F1F5F9', marginVertical: 4 }} />
+                        
                         <Text style={styles.filterGroupTitle}>Sắp xếp Sản Phẩm</Text>
                         <RadioItem label="Mới nhất" selected={prodFilter === 'newest'} onPress={() => setProdFilter('newest')} />
-                        <RadioItem label="Theo Danh mục" selected={prodFilter === 'cat'} onPress={() => setProdFilter('cat')} />
                         <RadioItem label="Giá Tăng dần" selected={prodFilter === 'price_asc'} onPress={() => setProdFilter('price_asc')} />
                         <RadioItem label="Giá Giảm dần" selected={prodFilter === 'price_desc'} onPress={() => setProdFilter('price_desc')} />
                     </View>

@@ -111,12 +111,12 @@ const tabletStyles = StyleSheet.create({
     gridContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        marginHorizontal: -8,
+        marginHorizontal: -12,
     },
     promoCardTablet: {
-        width: '50%', // 2 columns
-        paddingHorizontal: 8,
-        marginBottom: 16,
+        width: '33.333%', // 3 columns
+        paddingHorizontal: 12,
+        marginBottom: 24,
     }
 });
 

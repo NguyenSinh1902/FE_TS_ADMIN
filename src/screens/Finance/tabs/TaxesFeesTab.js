@@ -9,10 +9,12 @@ import {
 import taxApi from '../../../api/taxApi';
 import { RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { useNotifications } from '../../../context/NotificationContext';
 
 const TaxesFeesTab = ({ onModalStateChange }) => {
     const { width } = useWindowDimensions();
     const isTablet = width >= 768;
+    const { showToast } = useNotifications();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [activePopId, setActivePopId] = useState(null);
@@ -72,7 +74,7 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
 
     const handleSaveTax = async () => {
         if (!formTaxName || !formTaxValue) {
-            Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin');
+            showToast('Lỗi', 'Vui lòng điền đầy đủ thông tin', 'error');
             return;
         }
 
@@ -87,15 +89,15 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
             setLoading(true);
             if (selectedTax) {
                 await taxApi.update(selectedTax.idThuePhi, payload);
-                Alert.alert('Thành công', 'Đã cập nhật thuế/phí');
+                showToast('Thành công', 'Đã cập nhật thuế/phí', 'success');
             } else {
                 await taxApi.create(payload);
-                Alert.alert('Thành công', 'Đã thêm thuế/phí mới');
+                showToast('Thành công', 'Đã thêm thuế/phí mới', 'success');
             }
             setShowTaxModal(false);
             fetchTaxes();
         } catch (error) {
-            Alert.alert('Lỗi', 'Không thể lưu thông tin');
+            showToast('Lỗi', 'Không thể lưu thông tin', 'error');
         } finally {
             setLoading(false);
         }
@@ -112,8 +114,9 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
                         await taxApi.delete(id);
                         setActivePopId(null);
                         fetchTaxes();
+                        showToast('Thành công', 'Đã xóa thuế/phí', 'success');
                     } catch (error) {
-                        Alert.alert('Lỗi', 'Không thể xóa thuế/phí');
+                        showToast('Lỗi', 'Không thể xóa thuế/phí', 'error');
                     }
                 }
             }
@@ -177,20 +180,19 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
         
         card: {
             flex: 1,
-            maxWidth: '48%',
-            backgroundColor: '#FFFFFF',
-            borderRadius: 20,
-            margin: 8,
-            padding: 20,
-            shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 3,
+            maxWidth: '31.3%',
+            minWidth: '31.3%',
+            borderRadius: 24,
+            margin: '1%',
+            padding: 24,
+            shadowColor: '#8BA367', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 5,
             overflow: 'hidden',
             borderWidth: 1, borderColor: '#F1F5F9'
         },
         cardDefault: {
-            backgroundColor: '#F7FAF5',
             borderWidth: 1.5,
-            borderColor: 'rgba(139, 163, 103, 0.25)',
-            shadowColor: '#8BA367', shadowOpacity: 0.08
+            borderColor: 'rgba(139, 163, 103, 0.3)',
+            shadowColor: '#8BA367', shadowOpacity: 0.12
         },
         cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
         iconContainer: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(139, 163, 103, 0.08)', justifyContent: 'center', alignItems: 'center' },
@@ -223,12 +225,16 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
 
     const renderTabletItem = ({ item }) => (
         <View style={[tabletStyles.card, item.laMacDinh && tabletStyles.cardDefault]}>
-            {/* Corner Decoration for Default */}
-            {item.laMacDinh && (
-                <View style={{ position: 'absolute', top: -5, right: -5 }}>
-                    <TeaLeafIcon size={50} opacity={0.08} />
-                </View>
-            )}
+            <LinearGradient 
+                colors={item.laMacDinh ? ['#ECFCCB', '#FFFFFF'] : ['#E0E7FF', '#FFFFFF']} 
+                start={{x: 0, y: 0}} end={{x: 1, y: 1}}
+                style={StyleSheet.absoluteFill}
+            />
+            
+            {/* Corner Decoration */}
+            <View style={{ position: 'absolute', top: -10, right: -10 }}>
+                {item.laMacDinh ? <TeaLeafIcon size={120} opacity={0.15} /> : <MatchaCupIcon size={120} opacity={0.12} />}
+            </View>
 
             <View style={tabletStyles.cardHeader}>
                 <View style={[tabletStyles.iconContainer, !item.laMacDinh && { backgroundColor: 'rgba(99, 102, 241, 0.08)' }]}>
@@ -334,7 +340,7 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
                     data={filteredTaxes}
                     keyExtractor={item => item.idThuePhi.toString()}
                     renderItem={renderTabletItem}
-                    numColumns={2}
+                    numColumns={3}
                     contentContainerStyle={{ paddingBottom: 40 }}
                     showsVerticalScrollIndicator={false}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8BA367']} />}

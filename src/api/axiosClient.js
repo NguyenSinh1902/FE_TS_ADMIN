@@ -2,7 +2,7 @@ import axios from 'axios';
 import safeAsyncStorage from '../utils/storage';
 
 const axiosClient = axios.create({
-  baseURL: 'http://10.0.2.2:8080/api', // Adjust if testing on physical device
+  baseURL: 'http://10.0.2.2:8080/api',
   timeout: 40000,
   headers: {
     'Content-Type': 'application/json',

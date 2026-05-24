@@ -20,9 +20,9 @@ export const SearchIcon = () => (
     </Svg>
 );
 
-export const FilterIcon = () => (
+export const FilterIcon = ({ color = "#4B5563" }) => (
     <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <Path d="M22 3H2L10 12.46V19L14 21V12.46L22 3Z" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M22 3H2L10 12.46V19L14 21V12.46L22 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
 );
 
@@ -72,20 +72,20 @@ export const DownloadIcon = ({ color = "#64748B" }) => (
     </Svg>
 );
 
-export const ChartBarIcon = ({ color = "#64748B" }) => (
-    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+export const ChartBarIcon = ({ size = 24, color = "#64748B" }) => (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
         <Path d="M18 20V10M12 20V4M6 20V14" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
 );
 
-export const ChartPieIcon = ({ color = "#64748B" }) => (
-    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+export const ChartPieIcon = ({ size = 24, color = "#64748B" }) => (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
         <Path d="M21.21 15.89A10 10 0 118 2.83M22 12A10 10 0 0012 2V12H22Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
 );
 
-export const CheckCircleIcon = ({ color = "#64748B" }) => (
-    <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+export const CheckCircleIcon = ({ size = 24, color = "#64748B" }) => (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
         <Path d="M22 11.08V12A10 10 0 1117.17 4.05M22 4L12 14.01L9 11.01" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
 );

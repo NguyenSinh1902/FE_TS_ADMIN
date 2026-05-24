@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, Image, ActivityIndicator, Alert, useWindowDimensions, ScrollView, Platform } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, Image, ActivityIndicator, useWindowDimensions, ScrollView, Animated } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { launchImageLibrary } from 'react-native-image-picker';
 import safeAsyncStorage from '../../utils/storage';
+import staffApi from '../../api/staffApi';
 import Svg, { Path, Circle } from 'react-native-svg';
 
 const CloseIcon = ({ color = '#94A3B8' }) => (
@@ -41,6 +42,16 @@ const ProfileModal = ({ visible, onClose, onLogout }) => {
     const [avatarUri, setAvatarUri] = useState(null);
     const [avatarFile, setAvatarFile] = useState(null);
 
+    // Toast
+    const [toast, setToast] = useState(null); // { type: 'success'|'error', message: string }
+    const toastTimeout = useRef(null);
+
+    const showToast = (type, message) => {
+        if (toastTimeout.current) clearTimeout(toastTimeout.current);
+        setToast({ type, message });
+        toastTimeout.current = setTimeout(() => setToast(null), 2500);
+    };
+
     useEffect(() => {
         if (visible) {
             loadUser();
@@ -56,7 +67,7 @@ const ProfileModal = ({ visible, onClose, onLogout }) => {
                 setUser(userData);
                 setHoTen(userData.hoTen || '');
                 setGioiTinh(userData.gioiTinh || 'NAM');
-                
+
                 if (userData.ngaySinh) {
                     const dateObj = new Date(userData.ngaySinh);
                     const formattedDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
@@ -64,10 +75,26 @@ const ProfileModal = ({ visible, onClose, onLogout }) => {
                 } else {
                     setNgaySinh('');
                 }
-                
+
                 setSoDienThoai(userData.soDienThoai || '');
-                setAvatarUri(userData.hinhAnh || null);
+                setAvatarUri(userData.hinhAnh || userData.avatar || null);
                 setAvatarFile(null);
+
+                // Fetch fresh data from server to get the actual Firebase avatar URL
+                if (userData.idNhanVien) {
+                    try {
+                        const freshData = await staffApi.getById(userData.idNhanVien);
+                        const freshAvatar = freshData?.hinhAnh || freshData?.avatar;
+                        if (freshAvatar) {
+                            setAvatarUri(freshAvatar);
+                            // Update AsyncStorage so it's in sync
+                            const syncedUser = { ...userData, hinhAnh: freshAvatar, avatar: freshAvatar };
+                            await safeAsyncStorage.setItem('user', JSON.stringify(syncedUser));
+                        }
+                    } catch (e) {
+                        // Silent - use cached data
+                    }
+                }
             }
         } catch (error) {
             console.error('Error loading user', error);
@@ -137,15 +164,23 @@ const ProfileModal = ({ visible, onClose, onLogout }) => {
                 throw new Error('Failed to update profile');
             }
             
-            // Update local storage
-            const updatedUser = { ...user, ...requestData, hinhAnh: avatarUri };
-            await safeAsyncStorage.setItem('user', JSON.stringify(updatedUser));
+            // After save, fetch fresh profile to get the Firebase URL from server
+            try {
+                const freshData = await staffApi.getById(user.idNhanVien);
+                const finalAvatarUrl = freshData?.hinhAnh || freshData?.avatar || avatarUri;
+                const updatedUser = { ...user, ...requestData, hinhAnh: finalAvatarUrl, avatar: finalAvatarUrl };
+                await safeAsyncStorage.setItem('user', JSON.stringify(updatedUser));
+                setAvatarUri(finalAvatarUrl);
+            } catch (e) {
+                const updatedUser = { ...user, ...requestData, hinhAnh: avatarUri, avatar: avatarUri };
+                await safeAsyncStorage.setItem('user', JSON.stringify(updatedUser));
+            }
             
-            Alert.alert('Thành công', 'Đã cập nhật thông tin cá nhân');
+            showToast('success', 'Đã cập nhật thông tin cá nhân');
             setIsEditing(false);
         } catch (error) {
             console.error('Save profile error', error);
-            Alert.alert('Lỗi', 'Không thể cập nhật thông tin cá nhân');
+            showToast('error', 'Không thể cập nhật thông tin cá nhân');
         } finally {
             setLoading(false);
         }
@@ -168,6 +203,18 @@ const ProfileModal = ({ visible, onClose, onLogout }) => {
                             </TouchableOpacity>
                         </View>
                     </View>
+
+                    {/* Toast banner */}
+                    {toast && (
+                        <View style={[
+                            styles.toastBanner,
+                            toast.type === 'success' ? styles.toastSuccess : styles.toastError
+                        ]}>
+                            <Text style={styles.toastText}>
+                                {toast.type === 'success' ? '✓  ' : '✕  '}{toast.message}
+                            </Text>
+                        </View>
+                    )}
 
                     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24 }}>
                         <View style={styles.avatarSection}>
@@ -471,7 +518,31 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '900',
         letterSpacing: 1
-    }
+    },
+    toastBanner: {
+        marginHorizontal: 24,
+        marginBottom: 4,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    toastSuccess: {
+        backgroundColor: '#F0FDF4',
+        borderWidth: 1,
+        borderColor: '#86EFAC',
+    },
+    toastError: {
+        backgroundColor: '#FEF2F2',
+        borderWidth: 1,
+        borderColor: '#FCA5A5',
+    },
+    toastText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#1E293B',
+    },
 });
 
 export default ProfileModal;

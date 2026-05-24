@@ -4,6 +4,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import categoryApi from '../../../api/categoryApi';
 import Svg, { Path } from 'react-native-svg';
 import styles from './ProductFormModal.styles';
+import { useNotifications } from '../../../context/NotificationContext';
 
 const CloseIcon = () => (
     <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -22,6 +23,7 @@ const defaultForm = { tenDanhMuc: "", moTa: "" };
 export default function CategoryFormModal({ visible, onClose, initialData, onSave }) {
     const { width } = useWindowDimensions();
     const isTablet = width >= 768;
+    const { showToast } = useNotifications();
     const [formData, setFormData] = useState(defaultForm);
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
@@ -63,7 +65,7 @@ export default function CategoryFormModal({ visible, onClose, initialData, onSav
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
-            Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên danh mục.');
+            showToast('Lỗi', 'Vui lòng nhập tên danh mục.', 'error');
             return;
         }
 
@@ -94,11 +96,11 @@ export default function CategoryFormModal({ visible, onClose, initialData, onSav
                 await categoryApi.create(data);
             }
 
-            Alert.alert('Thành công', `Đã ${initialData ? 'cập nhật' : 'thêm'} danh mục.`);
+            showToast('Thành công', `Đã ${initialData ? 'cập nhật' : 'thêm'} danh mục.`, 'success');
             if (onSave) onSave();
         } catch (error) {
             console.error('Save category error:', error);
-            Alert.alert('Lỗi', 'Không thể lưu danh mục này.');
+            showToast('Lỗi', 'Không thể lưu danh mục này.', 'error');
         } finally {
             setLoading(false);
         }

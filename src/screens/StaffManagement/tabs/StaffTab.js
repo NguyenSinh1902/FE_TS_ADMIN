@@ -275,7 +275,7 @@ const StaffTab = ({ onModalStateChange, showToast }) => {
             </View>
 
             {isTablet ? (
-                <View>
+                <View style={{ flex: 1, overflow: 'hidden' }}>
                     <View style={styles.tableHeaderRow}>
                         <Text style={[styles.thCell, { flex: 2 }]}>Avatar / Họ tên</Text>
                         <Text style={[styles.thCell, { flex: 1.5 }]}>Chức vụ</Text>
@@ -284,26 +284,30 @@ const StaffTab = ({ onModalStateChange, showToast }) => {
                         <Text style={[styles.thCell, { width: 100, textAlign: 'center' }]}>Trạng thái</Text>
                         <Text style={[styles.thCell, { width: 60, textAlign: 'center' }]}>Thao tác</Text>
                     </View>
-                    {filteredActiveList.map(item => (
-                        <TouchableOpacity key={item.id} style={styles.tableRow} activeOpacity={0.7} onPress={() => setSelectedDetail(item)}>
-                            <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center' }}>
-                                <View style={styles.avatarWrap}>
-                                    <Image source={getAvatarSource(item.img)} style={styles.avatarImg} />
-                                    <View style={[styles.activeDot, item.trangThai === 'BI_KHOA' && styles.inactiveDot]} />
-                                </View>
-                                <Text style={[styles.tdCellBold, item.trangThai === 'BI_KHOA' && { color: '#9CA3AF' }]} numberOfLines={1}>{item.hoTen}</Text>
-                            </View>
-                            <Text style={[styles.tdCell, { flex: 1.5 }]}>{item.vaiTro}</Text>
-                            <Text style={[styles.tdCell, { flex: 2 }]} numberOfLines={1}>{item.email}</Text>
-                            <Text style={[styles.tdCell, { flex: 1.5 }]}>{item.sdt}</Text>
-                            <View style={{ width: 100, alignItems: 'center' }}>
-                                <Switch trackColor={{ false: "#E5E7EB", true: "#BBF7D0" }} thumbColor={item.trangThai === 'HOAT_DONG' ? "#10B981" : "#FFF"} value={item.trangThai === 'HOAT_DONG'} onValueChange={() => toggleStatus(item)} style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}/>
-                            </View>
-                            <View style={{ width: 60, alignItems: 'center' }}>
-                                <TouchableOpacity style={styles.moreBtn} onPress={(e) => onMorePress(e, item)}><MoreIcon /></TouchableOpacity>
-                            </View>
-                        </TouchableOpacity>
-                    ))}
+                    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={true} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8BA367']} />}>
+                        <View style={{ paddingBottom: 20 }}>
+                            {filteredActiveList.map(item => (
+                                <TouchableOpacity key={item.id} style={styles.tableRow} activeOpacity={0.7} onPress={() => setSelectedDetail(item)}>
+                                    <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center' }}>
+                                        <View style={styles.avatarWrap}>
+                                            <Image source={getAvatarSource(item.img)} style={styles.avatarImg} />
+                                            <View style={[styles.activeDot, item.trangThai === 'BI_KHOA' && styles.inactiveDot]} />
+                                        </View>
+                                        <Text style={[styles.tdCellBold, item.trangThai === 'BI_KHOA' && { color: '#9CA3AF' }]} numberOfLines={1}>{item.hoTen}</Text>
+                                    </View>
+                                    <Text style={[styles.tdCell, { flex: 1.5 }]}>{item.vaiTro}</Text>
+                                    <Text style={[styles.tdCell, { flex: 2 }]} numberOfLines={1}>{item.email}</Text>
+                                    <Text style={[styles.tdCell, { flex: 1.5 }]}>{item.sdt}</Text>
+                                    <View style={{ width: 100, alignItems: 'center' }}>
+                                        <Switch trackColor={{ false: "#E5E7EB", true: "#BBF7D0" }} thumbColor={item.trangThai === 'HOAT_DONG' ? "#10B981" : "#FFF"} value={item.trangThai === 'HOAT_DONG'} onValueChange={() => toggleStatus(item)} style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}/>
+                                    </View>
+                                    <View style={{ width: 60, alignItems: 'center' }}>
+                                        <TouchableOpacity style={styles.moreBtn} onPress={(e) => onMorePress(e, item)}><MoreIcon /></TouchableOpacity>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </ScrollView>
                 </View>
             ) : (
                 <View style={{ paddingBottom: 20 }}>
@@ -330,22 +334,22 @@ const StaffTab = ({ onModalStateChange, showToast }) => {
 
     return (
         <View style={{ flex: 1 }}>
-            <ScrollView 
-                contentContainerStyle={isTablet ? styles.tabletSplitLayout : styles.bodyScroll} 
-                showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8BA367']} />}
-            >
-                {isTablet ? (
+            {isTablet ? (
+                <View style={{ flex: 1, paddingHorizontal: 32, paddingBottom: 32 }}>
                     <View style={styles.tabletMainCol}>
                         {renderActiveList()}
                     </View>
-                ) : (
-                    <>
-                        {renderPendingList()}
-                        {renderActiveList()}
-                    </>
-                )}
-            </ScrollView>
+                </View>
+            ) : (
+                <ScrollView 
+                    contentContainerStyle={styles.bodyScroll} 
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8BA367']} />}
+                >
+                    {renderPendingList()}
+                    {renderActiveList()}
+                </ScrollView>
+            )}
 
             {/* Modal for Pending List (Tablet only) */}
             <Modal visible={showPendingModal} transparent animationType="fade">

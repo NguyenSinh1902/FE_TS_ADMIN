@@ -377,6 +377,14 @@ export default StyleSheet.create({
         fontWeight: '800',
         color: '#101828',
     },
+    iconBtn: {
+        width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+        justifyContent: 'center', alignItems: 'center', marginLeft: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.5)',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 2
+    },
+    badge: {
+        position: 'absolute', top: 6, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444'
+    },
     tabletTabRow: {
         marginHorizontal: 0,
         marginVertical: 0,

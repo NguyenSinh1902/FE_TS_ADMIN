@@ -77,8 +77,8 @@ export default StyleSheet.create({
   },
 
   content: {
-    flex: 1,
     padding: isTablet ? 32 : 16,
+    paddingBottom: 100,
   },
   listContainer: {
     paddingBottom: 100,

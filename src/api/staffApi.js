@@ -2,6 +2,7 @@ import axiosClient from './axiosClient';
 
 const staffApi = {
     getAll: () => axiosClient.get('/nhan-vien'),
+    getById: (id) => axiosClient.get(`/nhan-vien/${id}`),
     getPending: () => axiosClient.get('/nhan-vien/cho-duyet'),
     getOperating: () => axiosClient.get('/nhan-vien/van-hanh'),
     updateStatus: (id, status) => axiosClient.patch(`/nhan-vien/${id}/trang-thai?status=${status}`),

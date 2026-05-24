@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, useWindowDimensions } from 'react-native';
 import Header from '../../components/Header';
-import BottomNav from '../../components/BottomNav';
-import Sidebar from '../../components/Sidebar';
 import styles from './Menu.styles';
 import { PlusIcon } from './MenuIcons';
 import ProductsTab from './tabs/ProductsTab';
 import CategoriesTab from './tabs/CategoriesTab';
 import ProductFormModal from './components/ProductFormModal';
 import CategoryFormModal from './components/CategoryFormModal';
+import NotificationModal from '../../components/NotificationModal';
+import SettingsModal from '../../components/SettingsModal';
 import { Svg, Path, Circle } from 'react-native-svg';
 
 const SettingsIcon = () => (
@@ -24,6 +24,8 @@ export default function Menu({ onNavigate }) {
     const [activeTab, setActiveTab] = useState('products');
     const [isTabModalOpen, setIsTabModalOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [showNotiModal, setShowNotiModal] = useState(false);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
 
     // Form States
     const [productFormVisible, setProductFormVisible] = useState(false);
@@ -59,12 +61,7 @@ export default function Menu({ onNavigate }) {
                     <View style={styles.frostyOverlay} />
                 </View>
 
-                <Sidebar
-                    activeRoute="Menu"
-                    onNavigate={onNavigate}
-                    isCollapsed={isSidebarCollapsed}
-                    onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                />
+                
 
                 <View style={styles.tabletMain}>
                     <View style={styles.tabletHeader}>
@@ -87,14 +84,14 @@ export default function Menu({ onNavigate }) {
                                 </TouchableOpacity>
                             </View>
 
-                            <TouchableOpacity style={styles.iconBtn}>
+                            <TouchableOpacity style={styles.iconBtn} onPress={() => setShowNotiModal(true)}>
                                 <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                                     <Path d="M18 8A6 6 0 0 0 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="#1B2A15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                     <Path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" stroke="#1B2A15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                 </Svg>
                                 <View style={styles.badge} />
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.iconBtn}>
+                            <TouchableOpacity style={styles.iconBtn} onPress={() => setShowSettingsModal(true)}>
                                 <SettingsIcon />
                             </TouchableOpacity>
                         </View>
@@ -128,6 +125,9 @@ export default function Menu({ onNavigate }) {
                     initialData={editingCategoryData}
                     onSave={() => setCategoryFormVisible(false)}
                 />
+
+                <NotificationModal visible={showNotiModal} onClose={() => setShowNotiModal(false)} />
+                <SettingsModal visible={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
             </View>
         );
     }
@@ -135,7 +135,7 @@ export default function Menu({ onNavigate }) {
     return (
         <View style={styles.mainContainer}>
             <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
-            <Header userName="Anna Trần" title="Quản lý Thực đơn" />
+            <Header userName="Anna Trần" title="Quản lý Thực đơn" onNotificationPress={() => setShowNotiModal(true)} />
 
             {/* Tab Switcher */}
             <View style={styles.tabContainer}>
@@ -191,9 +191,12 @@ export default function Menu({ onNavigate }) {
                         <PlusIcon />
                         <Text style={styles.fabText}>{activeTab === 'categories' ? 'Thêm Danh mục' : 'Thêm Sản phẩm'}</Text>
                     </TouchableOpacity>
-                    <BottomNav currentScreen="Menu" onNavigate={onNavigate} />
+                    
                 </>
             )}
+
+            <NotificationModal visible={showNotiModal} onClose={() => setShowNotiModal(false)} />
+            <SettingsModal visible={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
         </View>
     );
 }
