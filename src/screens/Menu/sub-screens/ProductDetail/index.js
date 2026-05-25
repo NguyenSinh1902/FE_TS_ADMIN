@@ -72,7 +72,7 @@ export default function ProductDetail({ onNavigate, params }) {
             </View>
 
             {/* Pop-over Dropdown Menu (3 chấm) */}
-            <Modal visible={showMenu} transparent animationType="fade">
+            <Modal visible={showMenu} transparent animationType="fade" statusBarTranslucent={true}>
                 {/* Khi bấm khung nền ngoài sẽ thoát menu */}
                 <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={() => setShowMenu(false)}>
                     <View style={styles.dropdownRect}>

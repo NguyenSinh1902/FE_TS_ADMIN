@@ -61,7 +61,7 @@ export default function Menu({ onNavigate }) {
                     <View style={styles.frostyOverlay} />
                 </View>
 
-                
+
 
                 <View style={styles.tabletMain}>
                     <View style={styles.tabletHeader}>
@@ -191,7 +191,7 @@ export default function Menu({ onNavigate }) {
                         <PlusIcon />
                         <Text style={styles.fabText}>{activeTab === 'categories' ? 'Thêm Danh mục' : 'Thêm Sản phẩm'}</Text>
                     </TouchableOpacity>
-                    
+
                 </>
             )}
 

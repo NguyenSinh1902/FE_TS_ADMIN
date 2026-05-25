@@ -133,7 +133,7 @@ export default function Dashboard({ onNavigate, params }) {
     const color = isNegative ? '#EF4444' : (isZero ? '#94A3B8' : '#059669');
     const arrow = isNegative ? '↘' : (isZero ? '→' : '↗');
     const sign = isNegative ? '' : (isZero ? '' : '+');
-    
+
     return (
       <Text style={[styles.todayCardGrowth, customStyle, { color }]}>
         {arrow} {sign}{val}%
@@ -618,67 +618,51 @@ export default function Dashboard({ onNavigate, params }) {
     let currentOffset = 0;
 
     return (
-      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-        <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center', marginLeft: -30 }}>
+      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        {/* Donut chart SVG */}
+        <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
           <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
             {normalizedSources.map((item, index) => {
               const percentage = item.percentage || 0;
-              if (percentage === 0) return null; // Don't draw path for 0%
+              if (percentage === 0) return null;
 
               const strokeLength = (percentage / 100) * circumference;
-              const startAngle = (currentOffset / circumference) * 360;
-              const sliceAngle = (percentage / 100) * 360;
-              const midAngle = startAngle + (sliceAngle / 2);
-              const radian = (midAngle - 90) * (Math.PI / 180);
-              const isRight = midAngle < 180;
-
-              const x1 = center + (radius + strokeWidth / 2 - 2) * Math.cos(radian);
-              const y1 = center + (radius + strokeWidth / 2 - 2) * Math.sin(radian);
-              const x2 = center + (radius + strokeWidth / 2 + 14) * Math.cos(radian);
-              const y2 = center + (radius + strokeWidth / 2 + 14) * Math.sin(radian);
-              const x3 = isRight ? x2 + 18 : x2 - 18;
-
-              const textAnchor = "start";
-              const approxTextWidth = percentage.toString().length * 6.5 + 10;
-              const textX = isRight ? x3 + 6 : x3 - approxTextWidth;
-
               const strokeDasharray = `${strokeLength} ${circumference}`;
               const strokeDashoffset = -currentOffset;
               currentOffset += strokeLength;
 
               return (
-                <React.Fragment key={index}>
-                  <Circle
-                    cx={center}
-                    cy={center}
-                    r={radius}
-                    stroke={colors[index % colors.length]}
-                    strokeWidth={strokeWidth}
-                    fill="transparent"
-                    strokeDasharray={strokeDasharray}
-                    strokeDashoffset={strokeDashoffset}
-                    origin={`${center}, ${center}`}
-                    rotation="-90"
-                  />
-                  {percentage >= 5 && (
-                    <React.Fragment>
-                      <Polyline points={`${x1},${y1} ${x2},${y2} ${x3},${y2}`} fill="none" stroke={colors[index % colors.length]} strokeWidth="1.5" />
-                      <TextSVG x={textX} y={y2 + 4} fontSize="14" fill="#1B2A15" fontWeight="800" textAnchor={textAnchor}>{percentage}%</TextSVG>
-                    </React.Fragment>
-                  )}
-                </React.Fragment>
+                <Circle
+                  key={index}
+                  cx={center}
+                  cy={center}
+                  r={radius}
+                  stroke={colors[index % colors.length]}
+                  strokeWidth={strokeWidth}
+                  fill="transparent"
+                  strokeDasharray={strokeDasharray}
+                  strokeDashoffset={strokeDashoffset}
+                  origin={`${center}, ${center}`}
+                  rotation="-90"
+                />
               );
             })}
           </Svg>
         </View>
 
-        <View style={{ flexDirection: 'column', gap: 10 }}>
+        {/* Legend — width cố định, không dùng flex:1 để tránh collapse */}
+        <View style={{ flexDirection: 'column', gap: 12 }}>
           {normalizedSources.map((item, index) => (
             <View key={`lgd_${index}`} style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors[index % colors.length], marginRight: 8 }} />
-              <Text style={{ fontSize: 14, color: '#1B2A15', fontWeight: '700' }}>
-                {item.label || (item.source === 'TAI_CHO' ? 'Tại chỗ' : 'Mang về')}
-              </Text>
+              <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors[index % colors.length], marginRight: 8, flexShrink: 0 }} />
+              <View>
+                <Text style={{ fontSize: 13, color: '#1B2A15', fontWeight: '700' }}>
+                  {item.label || (item.source === 'TAI_CHO' ? 'Tại chỗ' : 'Mang về')}
+                </Text>
+                <Text style={{ fontSize: 16, color: colors[index % colors.length], fontWeight: '900', marginTop: 1 }}>
+                  {item.percentage || 0}%
+                </Text>
+              </View>
             </View>
           ))}
         </View>

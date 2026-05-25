@@ -87,7 +87,7 @@ export default function StaffManagement({ onNavigate }) {
                     <View style={{ position: 'absolute', top: 350, right: 180, transform: [{ rotate: '45deg' }] }}><LeafDeco size={65} opacity={0.04} /></View>
                 </View>
 
-                
+
 
                 <View style={styles.tabletMain}>
                     {showToast && (

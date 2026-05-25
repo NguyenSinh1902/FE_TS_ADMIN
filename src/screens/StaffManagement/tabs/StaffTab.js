@@ -352,7 +352,7 @@ const StaffTab = ({ onModalStateChange, showToast }) => {
             )}
 
             {/* Modal for Pending List (Tablet only) */}
-            <Modal visible={showPendingModal} transparent animationType="fade">
+            <Modal visible={showPendingModal} transparent animationType="fade" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.pendingModalOverlay} activeOpacity={1} onPress={() => setShowPendingModal(false)}>
                     <TouchableOpacity activeOpacity={1} style={styles.pendingModalBox}>
                         <TouchableOpacity style={styles.detailCloseBtn} onPress={() => setShowPendingModal(false)}>
@@ -396,7 +396,7 @@ const StaffTab = ({ onModalStateChange, showToast }) => {
             </Modal>
 
             {/* Modals from StaffTab */}
-            <Modal visible={!!actionMenuContext} transparent animationType="fade">
+            <Modal visible={!!actionMenuContext} transparent animationType="fade" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.anchorOverlay} activeOpacity={1} onPress={() => setActionMenuContext(null)}>
                     {actionMenuContext && (
                         <View style={[styles.anchorPopoverBox, { top: actionMenuContext.y }]}>
@@ -407,7 +407,7 @@ const StaffTab = ({ onModalStateChange, showToast }) => {
                 </TouchableOpacity>
             </Modal>
 
-            <Modal visible={!!selectedDetail} transparent animationType="fade">
+            <Modal visible={!!selectedDetail} transparent animationType="fade" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.detailModalOverlay} activeOpacity={1} onPress={() => setSelectedDetail(null)}>
                     <TouchableOpacity activeOpacity={1} style={styles.detailCardBox}>
                         {selectedDetail && (
@@ -438,7 +438,7 @@ const StaffTab = ({ onModalStateChange, showToast }) => {
                 </TouchableOpacity>
             </Modal>
 
-            <Modal visible={showStaffFilter} transparent animationType="fade">
+            <Modal visible={showStaffFilter} transparent animationType="fade" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.filterOverlay} activeOpacity={1} onPress={() => setShowStaffFilter(false)}>
                     <View style={[styles.filterPopupBox, { top: filterPos }]}>
                         <Text style={styles.filterGroupTitle}>Nhóm Phân quyền</Text>

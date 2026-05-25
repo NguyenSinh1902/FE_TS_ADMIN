@@ -6,7 +6,7 @@ const ConfirmModal = ({ visible, title, message, onConfirm, onCancel, loading })
     const isTablet = width >= 768;
 
     return (
-        <Modal visible={visible} transparent animationType="fade">
+        <Modal visible={visible} transparent animationType="fade" statusBarTranslucent={true}>
             <View style={styles.overlay}>
                 <View style={[styles.modalBox, isTablet && styles.modalBoxTablet]}>
                     <Text style={styles.title}>{title || 'Xác nhận'}</Text>

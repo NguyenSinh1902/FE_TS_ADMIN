@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { NavigationContainer, getFocusedRouteNameFromRoute } from '@react-navigation/native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { StatusBar, View, ActivityIndicator, useWindowDimensions, DeviceEventEmitter, LogBox } from 'react-native';
+import { StatusBar, View, ActivityIndicator, Dimensions, DeviceEventEmitter, LogBox } from 'react-native';
+
+// Dùng Dimensions.get (static, 1 lần) thay vì useWindowDimensions (đăng ký event mỗi render)
+const { width: WINDOW_WIDTH } = Dimensions.get('window');
+const IS_TABLET = WINDOW_WIDTH >= 768;
 import safeAsyncStorage from './src/utils/storage';
 import { RealtimeProvider } from './src/context/RealtimeContext';
 import { NotificationProvider } from './src/context/NotificationContext';
@@ -26,12 +30,12 @@ const Stack = createNativeStackNavigator();
 const TabStack = createNativeStackNavigator();
 
 const MainAppTabs = ({ navigation, route }) => {
-  const { width } = useWindowDimensions();
-  const isTablet = width >= 768;
+  // IS_TABLET dùng hằng số static — không subscribe event xoay màn hình
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [currentTab, setCurrentTab] = useState(route?.params?.screen || 'Dashboard');
 
-  const handleNavigate = (screen, params) => {
+  // useCallback — giữ reference ổn định, tránh TabStack tạo lại component mỗi render
+  const handleNavigate = useCallback((screen, params) => {
     if (screen === 'Start' || screen === 'Login') {
       if (params?.reset) {
         navigation.reset({ index: 0, routes: [{ name: screen }] });
@@ -40,64 +44,74 @@ const MainAppTabs = ({ navigation, route }) => {
       }
       return;
     }
-
     setCurrentTab(screen); // Eager update
-
     if (params?.reset) {
       navigation.reset({ index: 0, routes: [{ name: 'Main', params: { screen, params: params?.params || {} } }] });
     } else {
       navigation.navigate('Main', { screen, params });
     }
-  };
+  }, [navigation]);
 
-  const renderScreen = (Component, extraProps = {}) => {
-    return ({ navigation: childNav, route: childRoute }) => (
-      <Component 
-        {...extraProps}
+  const handleToggleSidebar = useCallback(() => {
+    setIsSidebarCollapsed(prev => !prev);
+  }, []);
+
+  // renderScreen dùng useCallback — không tạo lại function mỗi render
+  const makeScreen = useCallback((Component) => {
+    return ({ route: childRoute }) => (
+      <Component
         params={childRoute.params || {}}
         onNavigate={handleNavigate}
       />
     );
-  };
+  }, [handleNavigate]);
+
+  // Mỗi screen được memo hóa bằng useMemo nếu cần, đây dùng ref cố định
+  const DashboardScreen = useRef(makeScreen(Dashboard)).current;
+  const MenuScreen = useRef(makeScreen(Menu)).current;
+  const StaffScreen = useRef(makeScreen(StaffManagement)).current;
+  const FacilityScreen = useRef(makeScreen(Facility)).current;
+  const FinanceScreen = useRef(makeScreen(Finance)).current;
+  const AIHistoryScreen = useRef(makeScreen(AIHistory)).current;
 
   return (
-    <View style={{ flex: 1, flexDirection: isTablet ? 'row' : 'column', backgroundColor: '#F8FAFC' }}>
-       {isTablet && (
-         <Sidebar 
-            activeTab={currentTab}
-            onNavigate={handleNavigate}
-            isCollapsed={isSidebarCollapsed}
-            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-         />
-       )}
-       <View style={{ flex: 1 }}>
-         <TabStack.Navigator 
-           screenOptions={{ headerShown: false, animation: 'none' }}
-           screenListeners={{
-             state: (e) => {
-               // Sync state when Android physical back button is pressed or navigation happens
-               if (e.data?.state?.routes) {
-                 const routes = e.data.state.routes;
-                 const activeRouteName = routes[routes.length - 1].name;
-                 setCurrentTab(activeRouteName);
-               }
-             }
-           }}
-         >
-           <TabStack.Screen name="Dashboard" component={renderScreen(Dashboard)} />
-           <TabStack.Screen name="Menu" component={renderScreen(Menu)} />
-           <TabStack.Screen name="StaffManagement" component={renderScreen(StaffManagement)} />
-           <TabStack.Screen name="Facility" component={renderScreen(Facility)} />
-           <TabStack.Screen name="Finance" component={renderScreen(Finance)} />
-           <TabStack.Screen name="AIHistory" component={renderScreen(AIHistory)} />
-         </TabStack.Navigator>
-       </View>
-       {!isTablet && (
-         <BottomNav 
-            activeTab={currentTab}
-            onNavigate={handleNavigate}
-         />
-       )}
+    <View style={{ flex: 1, flexDirection: IS_TABLET ? 'row' : 'column', backgroundColor: '#F8FAFC' }}>
+      {IS_TABLET && (
+        <Sidebar
+          activeTab={currentTab}
+          onNavigate={handleNavigate}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={handleToggleSidebar}
+        />
+      )}
+      <View style={{ flex: 1 }}>
+        <TabStack.Navigator
+          screenOptions={{ headerShown: false, animation: 'none' }}
+          screenListeners={{
+            state: (e) => {
+              // Sync state khi nhấn nút Back cứng Android
+              if (e.data?.state?.routes) {
+                const routes = e.data.state.routes;
+                const activeRouteName = routes[routes.length - 1].name;
+                setCurrentTab(activeRouteName);
+              }
+            }
+          }}
+        >
+          <TabStack.Screen name="Dashboard" component={DashboardScreen} />
+          <TabStack.Screen name="Menu" component={MenuScreen} />
+          <TabStack.Screen name="StaffManagement" component={StaffScreen} />
+          <TabStack.Screen name="Facility" component={FacilityScreen} />
+          <TabStack.Screen name="Finance" component={FinanceScreen} />
+          <TabStack.Screen name="AIHistory" component={AIHistoryScreen} />
+        </TabStack.Navigator>
+      </View>
+      {!IS_TABLET && (
+        <BottomNav
+          activeTab={currentTab}
+          onNavigate={handleNavigate}
+        />
+      )}
     </View>
   );
 };
@@ -112,7 +126,7 @@ const App = () => {
     // ─── FCM Setup ─────────────────────────────────────────────────────────────────────
     // Để dùng FCM: chạy 'npm install @react-native-firebase/app @react-native-firebase/messaging'
     // trong thư mục MatchTeaManager, sau đó rebuild app.
-    let unsubscribeFCM = () => {};
+    let unsubscribeFCM = () => { };
     try {
       const messaging = require('@react-native-firebase/messaging').default;
 
@@ -175,7 +189,7 @@ const App = () => {
 
   const renderScreen = (Component, extraProps = {}) => {
     return ({ navigation, route }) => (
-      <Component 
+      <Component
         {...extraProps}
         params={route.params || {}}
         onNavigate={(screen, params) => {

@@ -5,8 +5,9 @@ import LinearGradient from 'react-native-linear-gradient';
 import styles from './ProductsTab.styles';
 import { SearchIcon, FilterIcon, MoreIcon, EditIcon, TrashIcon, CloseIcon, PlusIcon } from '../MenuIcons';
 import productApi from '../../../api/productApi';
-import { RefreshControl, Alert } from 'react-native';
+import { RefreshControl } from 'react-native';
 import { useNotifications } from '../../../context/NotificationContext';
+import ConfirmModal from '../../../components/ConfirmModal';
 
 const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
     const { width, height } = useWindowDimensions();
@@ -18,10 +19,11 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilter, setShowFilter] = useState(false);
     const [filterPos, setFilterPos] = useState({ top: 0, left: 0 });
-    const [prodFilter, setProdFilter] = useState('newest'); 
+    const [prodFilter, setProdFilter] = useState('newest');
     const [filterCategory, setFilterCategory] = useState('Tất cả');
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [actionMenuContext, setActionMenuContext] = useState(null);
+    const [confirmAction, setConfirmAction] = useState(null);
 
     const fetchProducts = async () => {
         try {
@@ -38,6 +40,7 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                         desc: p.moTa || 'Chưa có mô tả',
                         price: priceStr,
                         img: p.duongDanAnh || 'https://images.unsplash.com/photo-1558857563-b37102e956bc?q=80&w=200',
+                        priceVal: firstVariant ? firstVariant.giaBan : 0, // Lưu giá trị số để sắp xếp mượt mà không dùng regex
                         variants: p.danhSachBienThe,
                         idDanhMuc: p.idDanhMuc,
                         laTopping: p.laTopping,
@@ -65,28 +68,23 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
     };
 
     const handleDelete = (id) => {
-        Alert.alert(
-            'Xác nhận xóa',
-            'Bạn có chắc chắn muốn xóa sản phẩm này?',
-            [
-                { text: 'Hủy', style: 'cancel' },
-                { 
-                    text: 'Xóa', 
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await productApi.delete(id);
-                            fetchProducts();
-                            setActionMenuContext(null);
-                            setSelectedProduct(null);
-                            showToast('Thành công', 'Đã xóa sản phẩm', 'success');
-                        } catch (error) {
-                            showToast('Lỗi', 'Không thể xóa sản phẩm này', 'error');
-                        }
+        setActionMenuContext(null);
+        setSelectedProduct(null);
+        // Tăng timeout lên 400ms để đảm bảo các modal cha đã đóng hoàn toàn trước khi mở ConfirmModal trên Android
+        setTimeout(() => {
+            setConfirmAction({
+                message: 'Bạn có chắc chắn muốn xóa sản phẩm này?',
+                onConfirm: async () => {
+                    try {
+                        await productApi.delete(id);
+                        fetchProducts();
+                        showToast('Thành công', 'Đã xóa sản phẩm', 'success');
+                    } catch (error) {
+                        showToast('Lỗi', 'Không thể xóa sản phẩm này', 'error');
                     }
                 }
-            ]
-        );
+            });
+        }, 400);
     };
 
     React.useEffect(() => {
@@ -127,26 +125,26 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
         </TouchableOpacity>
     );
 
-    const categories = ['Tất cả', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
-
-    const filteredProducts = products.filter(p => {
-        const matchName = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchCat = filterCategory === 'Tất cả' || p.category === filterCategory;
-        return matchName && matchCat;
-    }).sort((a, b) => {
-        if (prodFilter === 'newest') return b.id - a.id;
-        if (prodFilter === 'price_asc') {
-            const priceA = parseInt(a.price.replace(/[^\d]/g, '')) || 0;
-            const priceB = parseInt(b.price.replace(/[^\d]/g, '')) || 0;
-            return priceA - priceB;
-        }
-        if (prodFilter === 'price_desc') {
-            const priceA = parseInt(a.price.replace(/[^\d]/g, '')) || 0;
-            const priceB = parseInt(b.price.replace(/[^\d]/g, '')) || 0;
-            return priceB - priceA;
-        }
-        return 0;
-    });
+    const categories = React.useMemo(() => {
+        return ['Tất cả', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
+    }, [products]);
+ 
+    const filteredProducts = React.useMemo(() => {
+        return products.filter(p => {
+            const matchName = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchCat = filterCategory === 'Tất cả' || p.category === filterCategory;
+            return matchName && matchCat;
+        }).sort((a, b) => {
+            if (prodFilter === 'newest') return b.id - a.id;
+            if (prodFilter === 'price_asc') {
+                return a.priceVal - b.priceVal;
+            }
+            if (prodFilter === 'price_desc') {
+                return b.priceVal - a.priceVal;
+            }
+            return 0;
+        });
+    }, [products, searchQuery, filterCategory, prodFilter]);
 
     if (isTablet) {
         return (
@@ -155,7 +153,7 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                         <View style={[styles.searchInputWrapper, { width: 300, flex: 0 }]}>
                             <SearchIcon />
-                            <TextInput 
+                            <TextInput
                                 style={styles.searchInput} placeholder="Tìm sản phẩm..."
                                 placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery}
                             />
@@ -165,9 +163,9 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                         </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity 
-                        style={{ 
-                            backgroundColor: '#10B981', flexDirection: 'row', alignItems: 'center', 
+                    <TouchableOpacity
+                        style={{
+                            backgroundColor: '#10B981', flexDirection: 'row', alignItems: 'center',
                             paddingHorizontal: 16, height: 44, borderRadius: 12, gap: 8
                         }}
                         onPress={() => onOpenForm()}
@@ -188,37 +186,43 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                         <Text style={[styles.headerCell, { width: 60, textAlign: 'right' }]}>...</Text>
                     </View>
 
-                    <ScrollView 
-                        style={{ flex: 1 }} 
+                    <ScrollView
+                        style={{ flex: 1 }}
                         showsVerticalScrollIndicator={false}
                         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8BA367']} />}
                     >
                         {filteredProducts.map((prod) => (
-                            <TouchableOpacity key={prod.id} style={styles.tableRow} activeOpacity={0.7} onPress={() => setSelectedProduct(prod)}>
-                                <View style={{ width: 60 }}>
-                                    <Image source={{ uri: prod.img }} style={styles.prodIcon} />
-                                </View>
-                                <View style={{ flex: 2, marginLeft: 12 }}>
-                                    <Text style={[styles.rowCell, { fontWeight: '700' }]}>{prod.name}</Text>
-                                    <Text style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>{prod.desc.substring(0, 40)}...</Text>
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <View style={styles.prodCatTag}><Text style={styles.prodCatText}>{prod.category}</Text></View>
-                                </View>
-                                <View style={{ width: 120 }}>
-                                    <Text style={[styles.rowCell, { color: '#8BA367', fontWeight: '800' }]}>{prod.price}</Text>
-                                </View>
-                                <View style={{ width: 100, alignItems: 'center' }}>
-                                    <View style={[styles.statusToggle, !prod.isActive && styles.statusToggleOff]}>
-                                        <View style={[styles.toggleCircle, prod.isActive && styles.toggleCircleActive]} />
+                            <View key={prod.id} style={styles.tableRow}>
+                                <TouchableOpacity
+                                    style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
+                                    activeOpacity={0.7}
+                                    onPress={() => setSelectedProduct(prod)}
+                                >
+                                    <View style={{ width: 60 }}>
+                                        <Image source={{ uri: prod.img }} style={styles.prodIcon} />
                                     </View>
-                                </View>
+                                    <View style={{ flex: 2, marginLeft: 12 }}>
+                                        <Text style={[styles.rowCell, { fontWeight: '700' }]}>{prod.name}</Text>
+                                        <Text style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>{prod.desc.substring(0, 40)}...</Text>
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <View style={styles.prodCatTag}><Text style={styles.prodCatText}>{prod.category}</Text></View>
+                                    </View>
+                                    <View style={{ width: 120 }}>
+                                        <Text style={[styles.rowCell, { color: '#8BA367', fontWeight: '800' }]}>{prod.price}</Text>
+                                    </View>
+                                    <View style={{ width: 100, alignItems: 'center' }}>
+                                        <View style={[styles.statusToggle, !prod.isActive && styles.statusToggleOff]}>
+                                            <View style={[styles.toggleCircle, prod.isActive && styles.toggleCircleActive]} />
+                                        </View>
+                                    </View>
+                                </TouchableOpacity>
                                 <View style={{ width: 60, alignItems: 'flex-end' }}>
                                     <TouchableOpacity style={styles.actionBtn} onPress={(e) => onMorePress(e, prod)}>
                                         <MoreIcon color="#8BA367" />
                                     </TouchableOpacity>
                                 </View>
-                            </TouchableOpacity>
+                            </View>
                         ))}
                     </ScrollView>
                 </View>
@@ -233,9 +237,9 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                                     <RadioItem key={cat} label={cat} selected={filterCategory === cat} onPress={() => setFilterCategory(cat)} />
                                 ))}
                             </ScrollView>
-                            
+
                             <View style={{ height: 1, backgroundColor: '#F1F5F9', marginVertical: 4 }} />
-                            
+
                             <Text style={styles.filterGroupTitle}>Sắp xếp Sản Phẩm</Text>
                             <RadioItem label="Mới nhất" selected={prodFilter === 'newest'} onPress={() => setProdFilter('newest')} />
                             <RadioItem label="Giá Tăng dần" selected={prodFilter === 'price_asc'} onPress={() => setProdFilter('price_asc')} />
@@ -244,7 +248,7 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                     </TouchableOpacity>
                 </Modal>
 
-                <Modal visible={!!actionMenuContext} transparent animationType="fade">
+                <Modal visible={!!actionMenuContext} transparent animationType="none" statusBarTranslucent={true}>
                     <TouchableOpacity style={styles.anchorOverlay} activeOpacity={1} onPress={() => setActionMenuContext(null)}>
                         {actionMenuContext && (() => {
                             const posStyle = actionMenuContext.flipped
@@ -253,7 +257,7 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                             return (
                                 <View style={[styles.anchorPopoverBox, posStyle]}>
                                     <TouchableOpacity style={styles.anchorActionBtn} onPress={() => openEditForm(actionMenuContext.data)}>
-                                        <EditIcon color="#1E2939"/>
+                                        <EditIcon color="#1E2939" />
                                         <Text style={styles.anchorActionText}>Chỉnh sửa</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity style={[styles.anchorActionBtn, styles.anchorActionBtnNoBorder]} onPress={() => handleDelete(actionMenuContext.data.id)}>
@@ -267,12 +271,12 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                 </Modal>
 
                 {/* Detail Modal */}
-                <Modal visible={!!selectedProduct} transparent animationType="fade">
+                <Modal visible={!!selectedProduct} transparent animationType="fade" statusBarTranslucent={true}>
                     <View style={styles.detailModalOverlay}>
-                        <TouchableOpacity 
-                            style={StyleSheet.absoluteFill} 
-                            activeOpacity={1} 
-                            onPress={() => setSelectedProduct(null)} 
+                        <TouchableOpacity
+                            style={StyleSheet.absoluteFill}
+                            activeOpacity={1}
+                            onPress={() => setSelectedProduct(null)}
                         />
                         <View style={[styles.detailModalBox, isTablet && styles.detailModalTablet]}>
                             {selectedProduct && (
@@ -280,7 +284,7 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                                     {/* Hero Image Section */}
                                     <View style={styles.modalHero}>
                                         <Image source={{ uri: selectedProduct.img }} style={styles.modalImage} resizeMode="cover" />
-                                        <View 
+                                        <View
                                             style={[styles.modalImageGradient, { backgroundColor: 'rgba(0,0,0,0.2)' }]}
                                         />
                                         <TouchableOpacity style={styles.closeModalFloatBtn} onPress={() => setSelectedProduct(null)}>
@@ -309,8 +313,8 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                                             <View style={styles.variantTable}>
                                                 {selectedProduct.variants && selectedProduct.variants.length > 0 ? (
                                                     selectedProduct.variants.map((v, i) => (
-                                                        <View 
-                                                            key={v.idBienThe || i} 
+                                                        <View
+                                                            key={v.idBienThe || i}
                                                             style={[styles.variantItem, i === selectedProduct.variants.length - 1 && styles.variantItemLast]}
                                                         >
                                                             <Text style={styles.variantName}>{v.tenKichCo}</Text>
@@ -335,7 +339,7 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                                             ) : (
                                                 <Text style={styles.modalDescTextEmpty}>Sản phẩm này hiện chưa có mô tả chi tiết.</Text>
                                             )}
-                                            
+
                                             {/* Extra space for scrolling if needed */}
                                             <View style={{ height: 20 }} />
                                         </View>
@@ -343,15 +347,15 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
 
                                     {/* Fixed Footer Actions */}
                                     <View style={styles.modalFooter}>
-                                        <TouchableOpacity 
-                                            style={[styles.btnModalAction, styles.btnModalDelete]} 
+                                        <TouchableOpacity
+                                            style={[styles.btnModalAction, styles.btnModalDelete]}
                                             onPress={() => handleDelete(selectedProduct.id)}
                                         >
                                             <TrashIcon color="#EF4444" size={22} />
                                             <Text style={styles.btnModalDeleteText}>Xoá món</Text>
                                         </TouchableOpacity>
-                                        <TouchableOpacity 
-                                            style={[styles.btnModalAction, styles.btnModalEdit]} 
+                                        <TouchableOpacity
+                                            style={[styles.btnModalAction, styles.btnModalEdit]}
                                             onPress={() => openEditForm(selectedProduct)}
                                         >
                                             <EditIcon color="white" size={22} />
@@ -363,6 +367,18 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                         </View>
                     </View>
                 </Modal>
+
+                {/* Confirm Modal */}
+                <ConfirmModal
+                    visible={!!confirmAction}
+                    title="Xác nhận xóa"
+                    message={confirmAction?.message || ''}
+                    onConfirm={() => {
+                        if (confirmAction?.onConfirm) confirmAction.onConfirm();
+                        setConfirmAction(null);
+                    }}
+                    onCancel={() => setConfirmAction(null)}
+                />
             </View>
         );
     }
@@ -372,7 +388,7 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
             <View style={styles.searchRow}>
                 <View style={styles.searchInputWrapper}>
                     <SearchIcon />
-                    <TextInput 
+                    <TextInput
                         style={styles.searchInput} placeholder="Tìm sản phẩm..."
                         placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery}
                     />
@@ -382,20 +398,26 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView 
-                contentContainerStyle={styles.listContainer} 
+            <ScrollView
+                contentContainerStyle={styles.listContainer}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8BA367']} />}
             >
                 <View style={{ paddingTop: 8 }}>
                     {filteredProducts.map((prod) => (
-                        <TouchableOpacity key={prod.id} style={styles.prodCard} activeOpacity={0.8} onPress={() => setSelectedProduct(prod)}>
-                            <Image source={{ uri: prod.img }} style={styles.prodImage} />
-                            <View style={styles.prodInfo}>
-                                <Text style={styles.prodName}>{prod.name}</Text>
-                                <View style={styles.prodCatTag}><Text style={styles.prodCatText}>{prod.category}</Text></View>
-                                <Text style={styles.prodPrice}>{prod.price}</Text>
-                            </View>
+                        <View key={prod.id} style={styles.prodCard}>
+                            <TouchableOpacity
+                                style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
+                                activeOpacity={0.8}
+                                onPress={() => setSelectedProduct(prod)}
+                            >
+                                <Image source={{ uri: prod.img }} style={styles.prodImage} />
+                                <View style={styles.prodInfo}>
+                                    <Text style={styles.prodName}>{prod.name}</Text>
+                                    <View style={styles.prodCatTag}><Text style={styles.prodCatText}>{prod.category}</Text></View>
+                                    <Text style={styles.prodPrice}>{prod.price}</Text>
+                                </View>
+                            </TouchableOpacity>
                             <View style={styles.prodActions}>
                                 <TouchableOpacity style={styles.moreButton} onPress={(e) => onMorePress(e, prod)}>
                                     <MoreIcon />
@@ -404,7 +426,7 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                                     <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: 'white', alignSelf: 'flex-end' }} />
                                 </View>
                             </View>
-                        </TouchableOpacity>
+                        </View>
                     ))}
                 </View>
             </ScrollView>
@@ -419,9 +441,9 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                                 <RadioItem key={cat} label={cat} selected={filterCategory === cat} onPress={() => setFilterCategory(cat)} />
                             ))}
                         </ScrollView>
-                        
+
                         <View style={{ height: 1, backgroundColor: '#F1F5F9', marginVertical: 4 }} />
-                        
+
                         <Text style={styles.filterGroupTitle}>Sắp xếp Sản Phẩm</Text>
                         <RadioItem label="Mới nhất" selected={prodFilter === 'newest'} onPress={() => setProdFilter('newest')} />
                         <RadioItem label="Giá Tăng dần" selected={prodFilter === 'price_asc'} onPress={() => setProdFilter('price_asc')} />
@@ -431,12 +453,12 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
             </Modal>
 
             {/* Action Popup */}
-            <Modal visible={!!actionMenuContext} transparent animationType="fade">
+            <Modal visible={!!actionMenuContext} transparent animationType="none" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.anchorOverlay} activeOpacity={1} onPress={() => setActionMenuContext(null)}>
                     {actionMenuContext && (
                         <View style={[styles.anchorPopoverBox, { top: actionMenuContext.y }]}>
                             <TouchableOpacity style={styles.anchorActionBtn} onPress={() => openEditForm(actionMenuContext.data)}>
-                                <EditIcon color="#1E2939"/>
+                                <EditIcon color="#1E2939" />
                                 <Text style={styles.anchorActionText}>Chỉnh sửa</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={[styles.anchorActionBtn, styles.anchorActionBtnNoBorder]} onPress={() => handleDelete(actionMenuContext.data.id)}>
@@ -449,7 +471,7 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
             </Modal>
 
             {/* Detail Modal */}
-            <Modal visible={!!selectedProduct} transparent animationType="fade">
+            <Modal visible={!!selectedProduct} transparent animationType="fade" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.detailModalOverlay} activeOpacity={1} onPress={() => setSelectedProduct(null)}>
                     <TouchableOpacity activeOpacity={1} style={styles.detailModalBox}>
                         {selectedProduct && (
@@ -463,7 +485,7 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                                         <Text style={styles.modalTitle}>{selectedProduct.name}</Text>
                                         <Text style={styles.modalPrice}>{selectedProduct.price}</Text>
                                     </View>
-                                    
+
                                     <View style={{ flexDirection: 'row', gap: 8 }}>
                                         <View style={styles.prodCatTag}><Text style={styles.prodCatText}>{selectedProduct.category}</Text></View>
                                         {selectedProduct.laTopping && (
@@ -480,7 +502,7 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                                         {v.phanTramGiamGia > 0 && (
                                                             <View style={styles.discountBadge}>
-                                                                  <Text style={styles.discountText}>-{v.phanTramGiamGia}%</Text>
+                                                                <Text style={styles.discountText}>-{v.phanTramGiamGia}%</Text>
                                                             </View>
                                                         )}
                                                         <Text style={styles.variantVal}>{v.giaBan.toLocaleString()}₫</Text>
@@ -488,7 +510,7 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                                                 </View>
                                             ))
                                         ) : (
-                                            <Text style={{color: '#9CA3AF'}}>Mặc định</Text>
+                                            <Text style={{ color: '#9CA3AF' }}>Mặc định</Text>
                                         )}
                                     </View>
 
@@ -496,7 +518,7 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                                     <Text style={styles.modalDescText}>{selectedProduct.desc}</Text>
                                     <View style={styles.modalActionRow}>
                                         <TouchableOpacity style={styles.modalActionBtnSquare} onPress={() => openEditForm(selectedProduct)}><EditIcon color="#3B82F6" size={24} /></TouchableOpacity>
-                                        <TouchableOpacity 
+                                        <TouchableOpacity
                                             style={[styles.modalActionBtnSquare, styles.modalActionDangerSquare]}
                                             onPress={() => handleDelete(selectedProduct.id)}
                                         >
@@ -509,6 +531,18 @@ const ProductsTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                     </TouchableOpacity>
                 </TouchableOpacity>
             </Modal>
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                visible={!!confirmAction}
+                title="Xác nhận xóa"
+                message={confirmAction?.message || ''}
+                onConfirm={() => {
+                    if (confirmAction?.onConfirm) confirmAction.onConfirm();
+                    setConfirmAction(null);
+                }}
+                onCancel={() => setConfirmAction(null)}
+            />
         </View>
     );
 };

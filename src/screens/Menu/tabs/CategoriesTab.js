@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Modal, useWindowDimensions, Platform, Pressable, StyleSheet, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Modal, useWindowDimensions, Platform, Pressable, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import styles from './CategoriesTab.styles';
 import { SearchIcon, FilterIcon, MoreIcon, EditIcon, TrashIcon, CloseIcon, PlusIcon } from '../MenuIcons';
 import categoryApi from '../../../api/categoryApi';
 import productApi from '../../../api/productApi';
 import { useNotifications } from '../../../context/NotificationContext';
+import ConfirmModal from '../../../components/ConfirmModal';
 
 const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
     const { width } = useWindowDimensions();
@@ -16,11 +17,12 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilter, setShowFilter] = useState(false);
     const [filterPos, setFilterPos] = useState({ top: 0, left: 0 });
-    const [catFilter, setCatFilter] = useState('az'); 
+    const [catFilter, setCatFilter] = useState('az');
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [actionMenuContext, setActionMenuContext] = useState(null);
     const [categoryProducts, setCategoryProducts] = useState([]);
     const [fetchingProds, setFetchingProds] = useState(false);
+    const [confirmAction, setConfirmAction] = useState(null);
 
     const fetchCategoryProducts = async (catId) => {
         try {
@@ -75,27 +77,22 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
     };
 
     const handleDelete = (id) => {
-        Alert.alert(
-            'Xác nhận xóa',
-            'Bạn có chắc chắn muốn xóa danh mục này? Các sản phẩm bên trong sẽ chuyển sang danh mục "Khác".',
-            [
-                { text: 'Hủy', style: 'cancel' },
-                { 
-                    text: 'Xóa', 
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await categoryApi.delete(id);
-                            fetchCategories();
-                            setActionMenuContext(null);
-                            showToast('Thành công', 'Đã xóa danh mục', 'success');
-                        } catch (error) {
-                            showToast('Lỗi', 'Không thể xóa danh mục này', 'error');
-                        }
+        setActionMenuContext(null);
+        // Tăng timeout lên 400ms để đảm bảo các modal cha đã đóng hoàn toàn trước khi mở ConfirmModal trên Android
+        setTimeout(() => {
+            setConfirmAction({
+                message: 'Bạn có chắc chắn muốn xóa danh mục này? Các sản phẩm bên trong sẽ chuyển sang danh mục "Khác".',
+                onConfirm: async () => {
+                    try {
+                        await categoryApi.delete(id);
+                        fetchCategories();
+                        showToast('Thành công', 'Đã xóa danh mục', 'success');
+                    } catch (error) {
+                        showToast('Lỗi', 'Không thể xóa danh mục này', 'error');
                     }
                 }
-            ]
-        );
+            });
+        }, 400);
     };
 
     React.useEffect(() => {
@@ -165,7 +162,7 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                         <View style={[styles.searchInputWrapper, { width: 300, flex: 0 }]}>
                             <SearchIcon />
-                            <TextInput 
+                            <TextInput
                                 style={styles.searchInput} placeholder="Tìm danh mục..."
                                 placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery}
                             />
@@ -175,9 +172,9 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                         </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity 
-                        style={{ 
-                            backgroundColor: '#10B981', flexDirection: 'row', alignItems: 'center', 
+                    <TouchableOpacity
+                        style={{
+                            backgroundColor: '#10B981', flexDirection: 'row', alignItems: 'center',
                             paddingHorizontal: 16, height: 44, borderRadius: 12, gap: 8
                         }}
                         onPress={() => onOpenForm()}
@@ -197,8 +194,8 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                         <Text style={[styles.headerCell, { width: 60, textAlign: 'right' }]}>...</Text>
                     </View>
 
-                    <ScrollView 
-                        style={{ flex: 1 }} 
+                    <ScrollView
+                        style={{ flex: 1 }}
                         showsVerticalScrollIndicator={false}
                         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8BA367']} />}
                     >
@@ -237,23 +234,23 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                             <Text style={styles.filterGroupTitle}>Sắp xếp Danh Mục</Text>
                             <RadioItem label="Tên (A → Z)" selected={catFilter === 'az'} onPress={() => setCatFilter('az')} />
                             <RadioItem label="Nhiều sản phẩm" selected={catFilter === 'count_desc'} onPress={() => setCatFilter('count_desc')} />
-                            <View style={styles.filterDivider}/>
+                            <View style={styles.filterDivider} />
                             <RadioItem label="Danh mục thường" selected={catFilter === 'type_normal'} onPress={() => setCatFilter('type_normal')} />
                             <RadioItem label="Danh mục hệ thống" selected={catFilter === 'type_system'} onPress={() => setCatFilter('type_system')} />
                         </View>
                     </TouchableOpacity>
                 </Modal>
 
-                <Modal visible={!!actionMenuContext} transparent animationType="fade">
+                <Modal visible={!!actionMenuContext} transparent animationType="none" statusBarTranslucent={true}>
                     <TouchableOpacity style={styles.anchorOverlay} activeOpacity={1} onPress={() => setActionMenuContext(null)}>
                         {actionMenuContext && (
                             <View style={[styles.anchorPopoverBox, { top: actionMenuContext.y, right: isTablet ? 80 : 40 }]}>
                                 <TouchableOpacity style={styles.anchorActionBtn} onPress={() => openEditForm(actionMenuContext.data)}>
-                                    <EditIcon color="#1E2939"/>
+                                    <EditIcon color="#1E2939" />
                                     <Text style={styles.anchorActionText}>Chỉnh sửa</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity 
-                                    style={[styles.anchorActionBtn, styles.anchorActionBtnNoBorder, { opacity: actionMenuContext.data.isSystem ? 0.4 : 1 }]} 
+                                <TouchableOpacity
+                                    style={[styles.anchorActionBtn, styles.anchorActionBtnNoBorder, { opacity: actionMenuContext.data.isSystem ? 0.4 : 1 }]}
                                     disabled={actionMenuContext.data.isSystem}
                                     onPress={() => handleDelete(actionMenuContext.data.id)}
                                 >
@@ -266,24 +263,24 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                 </Modal>
 
                 {/* Category Detail Modal */}
-                <Modal visible={!!selectedCategory} transparent animationType="fade">
+                <Modal visible={!!selectedCategory} transparent animationType="fade" statusBarTranslucent={true}>
                     <View style={styles.detailModalOverlay}>
-                        <Pressable 
-                            style={StyleSheet.absoluteFill} 
-                            onPress={() => setSelectedCategory(null)} 
+                        <Pressable
+                            style={StyleSheet.absoluteFill}
+                            onPress={() => setSelectedCategory(null)}
                         />
                         <View style={[styles.detailModalBox, isTablet && { width: 500, alignSelf: 'center' }]}>
                             {selectedCategory && (
                                 <View style={{ flex: 1 }}>
-                                    <ScrollView 
-                                        showsVerticalScrollIndicator={false} 
+                                    <ScrollView
+                                        showsVerticalScrollIndicator={false}
                                         contentContainerStyle={{ paddingBottom: 20 }}
                                         nestedScrollEnabled={true}
                                     >
                                         <View>
                                             <Image source={{ uri: selectedCategory.img }} style={styles.modalImage} />
-                                            <TouchableOpacity 
-                                                style={styles.closeModalFloatBtn} 
+                                            <TouchableOpacity
+                                                style={styles.closeModalFloatBtn}
                                                 onPress={() => setSelectedCategory(null)}
                                             >
                                                 <CloseIcon />
@@ -296,7 +293,7 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                                             <Text style={styles.modalDescription}>
                                                 {selectedCategory.moTa || 'Chưa có mô tả cho danh mục này...'}
                                             </Text>
-                                            
+
                                             {selectedCategory.isSystem && (
                                                 <View style={styles.warningBox}>
                                                     <Text style={styles.warningText}>Đây là thư mục hệ thống. Dòng tiền và các sản phẩm không phân loại sẽ được tự động gom vào đây.</Text>
@@ -318,7 +315,7 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                                                         </View>
                                                     ))
                                                 ) : (
-                                                    <Text style={{color: '#9CA3AF'}}>Chưa có sản phẩm nào.</Text>
+                                                    <Text style={{ color: '#9CA3AF' }}>Chưa có sản phẩm nào.</Text>
                                                 )}
                                             </View>
                                         </View>
@@ -326,15 +323,15 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
 
                                     <View style={{ padding: 20, paddingTop: 12, backgroundColor: 'white', borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
                                         <View style={styles.modalActionRow}>
-                                            <TouchableOpacity 
-                                                style={[styles.modalActionBtnSquare, selectedCategory.isSystem && { opacity: 0.5, backgroundColor: '#F8FAFC' }]} 
+                                            <TouchableOpacity
+                                                style={[styles.modalActionBtnSquare, selectedCategory.isSystem && { opacity: 0.5, backgroundColor: '#F8FAFC' }]}
                                                 onPress={() => !selectedCategory.isSystem && openEditForm(selectedCategory)}
                                                 disabled={selectedCategory.isSystem}
                                             >
                                                 <EditIcon color={selectedCategory.isSystem ? "#CBD5E1" : "#3B82F6"} size={22} />
                                             </TouchableOpacity>
-                                            <TouchableOpacity 
-                                                style={[styles.modalActionBtnSquare, styles.modalActionDangerSquare, selectedCategory.isSystem && { opacity: 0.3 }]} 
+                                            <TouchableOpacity
+                                                style={[styles.modalActionBtnSquare, styles.modalActionDangerSquare, selectedCategory.isSystem && { opacity: 0.3 }]}
                                                 onPress={() => !selectedCategory.isSystem && handleDelete(selectedCategory.id)}
                                                 disabled={selectedCategory.isSystem}
                                             >
@@ -347,6 +344,18 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                         </View>
                     </View>
                 </Modal>
+
+                {/* Confirm Modal */}
+                <ConfirmModal
+                    visible={!!confirmAction}
+                    title="Xác nhận xóa"
+                    message={confirmAction?.message || ''}
+                    onConfirm={() => {
+                        if (confirmAction?.onConfirm) confirmAction.onConfirm();
+                        setConfirmAction(null);
+                    }}
+                    onCancel={() => setConfirmAction(null)}
+                />
             </View>
         );
     }
@@ -356,7 +365,7 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
             <View style={styles.searchRow}>
                 <View style={styles.searchInputWrapper}>
                     <SearchIcon />
-                    <TextInput 
+                    <TextInput
                         style={styles.searchInput} placeholder="Tìm danh mục..."
                         placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery}
                     />
@@ -366,8 +375,8 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView 
-                contentContainerStyle={styles.listContainer} 
+            <ScrollView
+                contentContainerStyle={styles.listContainer}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#8BA367']} />}
             >
@@ -375,7 +384,7 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                     {filteredCategories.map((cat) => (
                         <TouchableOpacity key={cat.id} style={styles.catCard} activeOpacity={0.8} onPress={() => setSelectedCategory(cat)}>
                             <View style={styles.catInfo}>
-                                <View style={styles.catImageWrap}><Image source={{ uri: cat.img }} style={styles.catImage}/></View>
+                                <View style={styles.catImageWrap}><Image source={{ uri: cat.img }} style={styles.catImage} /></View>
                                 <View>
                                     <Text style={styles.catName}>{cat.name}</Text>
                                     <Text style={styles.catCount}>{cat.count} sản phẩm {cat.isSystem && ' • Hệ thống'}</Text>
@@ -396,7 +405,7 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                         <Text style={styles.filterGroupTitle}>Sắp xếp Danh Mục</Text>
                         <RadioItem label="Tên (A → Z)" selected={catFilter === 'az'} onPress={() => setCatFilter('az')} />
                         <RadioItem label="Nhiều sản phẩm" selected={catFilter === 'count_desc'} onPress={() => setCatFilter('count_desc')} />
-                        <View style={styles.filterDivider}/>
+                        <View style={styles.filterDivider} />
                         <RadioItem label="Danh mục thường" selected={catFilter === 'type_normal'} onPress={() => setCatFilter('type_normal')} />
                         <RadioItem label="Danh mục hệ thống" selected={catFilter === 'type_system'} onPress={() => setCatFilter('type_system')} />
                     </View>
@@ -404,16 +413,16 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
             </Modal>
 
             {/* Action Popup */}
-            <Modal visible={!!actionMenuContext} transparent animationType="fade">
+            <Modal visible={!!actionMenuContext} transparent animationType="none" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.anchorOverlay} activeOpacity={1} onPress={() => setActionMenuContext(null)}>
                     {actionMenuContext && (
                         <View style={[styles.anchorPopoverBox, { top: actionMenuContext.y }]}>
                             <TouchableOpacity style={styles.anchorActionBtn} onPress={() => openEditForm(actionMenuContext.data)}>
-                                <EditIcon color="#1E2939"/>
+                                <EditIcon color="#1E2939" />
                                 <Text style={styles.anchorActionText}>Chỉnh sửa</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity 
-                                style={[styles.anchorActionBtn, styles.anchorActionBtnNoBorder, { opacity: actionMenuContext.data.isSystem ? 0.4 : 1 }]} 
+                            <TouchableOpacity
+                                style={[styles.anchorActionBtn, styles.anchorActionBtnNoBorder, { opacity: actionMenuContext.data.isSystem ? 0.4 : 1 }]}
                                 disabled={actionMenuContext.data.isSystem}
                                 onPress={() => handleDelete(actionMenuContext.data.id)}
                             >
@@ -426,24 +435,24 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
             </Modal>
 
             {/* Category Detail Modal */}
-            <Modal visible={!!selectedCategory} transparent animationType="fade">
+            <Modal visible={!!selectedCategory} transparent animationType="fade" statusBarTranslucent={true}>
                 <View style={styles.detailModalOverlay}>
-                    <Pressable 
-                        style={StyleSheet.absoluteFill} 
-                        onPress={() => setSelectedCategory(null)} 
+                    <Pressable
+                        style={StyleSheet.absoluteFill}
+                        onPress={() => setSelectedCategory(null)}
                     />
                     <View style={styles.detailModalBox}>
                         {selectedCategory && (
                             <View style={{ flex: 1 }}>
-                                <ScrollView 
-                                    showsVerticalScrollIndicator={false} 
+                                <ScrollView
+                                    showsVerticalScrollIndicator={false}
                                     contentContainerStyle={{ paddingBottom: 20 }}
                                     nestedScrollEnabled={true}
                                 >
                                     <View>
                                         <Image source={{ uri: selectedCategory.img }} style={styles.modalImage} />
-                                        <TouchableOpacity 
-                                            style={styles.closeModalFloatBtn} 
+                                        <TouchableOpacity
+                                            style={styles.closeModalFloatBtn}
                                             onPress={() => setSelectedCategory(null)}
                                         >
                                             <CloseIcon />
@@ -453,7 +462,7 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                                         <View style={styles.modalTitleRow}><Text style={styles.modalTitle}>{selectedCategory.name}</Text></View>
                                         {selectedCategory.isSystem && <View style={styles.systemBadge}><Text style={styles.systemText}>Chỉ đọc / Hệ thống</Text></View>}
                                         <Text style={styles.catCountText}>Tổng số lượng: {selectedCategory.count} sản phẩm</Text>
-                                        
+
                                         {selectedCategory.isSystem && (
                                             <View style={styles.warningBox}>
                                                 <Text style={styles.warningText}>Đây là thư mục hệ thống. Dòng tiền và các sản phẩm không phân loại sẽ được tự động gom vào đây.</Text>
@@ -475,7 +484,7 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                                                     </View>
                                                 ))
                                             ) : (
-                                                <Text style={{color: '#9CA3AF'}}>Chưa có sản phẩm nào.</Text>
+                                                <Text style={{ color: '#9CA3AF' }}>Chưa có sản phẩm nào.</Text>
                                             )}
                                         </View>
                                     </View>
@@ -483,15 +492,15 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
 
                                 <View style={{ padding: 20, paddingTop: 12, backgroundColor: 'white', borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
                                     <View style={styles.modalActionRow}>
-                                        <TouchableOpacity 
-                                            style={[styles.modalActionBtnSquare, selectedCategory.isSystem && { opacity: 0.5, backgroundColor: '#F8FAFC' }]} 
+                                        <TouchableOpacity
+                                            style={[styles.modalActionBtnSquare, selectedCategory.isSystem && { opacity: 0.5, backgroundColor: '#F8FAFC' }]}
                                             onPress={() => !selectedCategory.isSystem && openEditForm(selectedCategory)}
                                             disabled={selectedCategory.isSystem}
                                         >
                                             <EditIcon color={selectedCategory.isSystem ? "#CBD5E1" : "#3B82F6"} size={22} />
                                         </TouchableOpacity>
-                                        <TouchableOpacity 
-                                            style={[styles.modalActionBtnSquare, styles.modalActionDangerSquare, selectedCategory.isSystem && { opacity: 0.3 }]} 
+                                        <TouchableOpacity
+                                            style={[styles.modalActionBtnSquare, styles.modalActionDangerSquare, selectedCategory.isSystem && { opacity: 0.3 }]}
                                             onPress={() => !selectedCategory.isSystem && handleDelete(selectedCategory.id)}
                                             disabled={selectedCategory.isSystem}
                                         >
@@ -504,6 +513,18 @@ const CategoriesTab = ({ onModalStateChange, onNavigate, onOpenForm }) => {
                     </View>
                 </View>
             </Modal>
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                visible={!!confirmAction}
+                title="Xác nhận xóa"
+                message={confirmAction?.message || ''}
+                onConfirm={() => {
+                    if (confirmAction?.onConfirm) confirmAction.onConfirm();
+                    setConfirmAction(null);
+                }}
+                onCancel={() => setConfirmAction(null)}
+            />
         </View>
     );
 };

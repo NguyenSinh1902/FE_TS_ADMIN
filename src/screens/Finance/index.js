@@ -3,9 +3,9 @@ import { View, Text, TouchableOpacity, StatusBar, useWindowDimensions, ImageBack
 import { Svg, Path, Circle } from 'react-native-svg';
 import Header from '../../components/Header';
 import styles from './Finance.styles';
-import { 
-    ReceiptIcon, TaxIcon, 
-    TeaLeafIcon, MatchaCupIcon, PearlIcon, TeapotIcon 
+import {
+    ReceiptIcon, TaxIcon,
+    TeaLeafIcon, MatchaCupIcon, PearlIcon, TeapotIcon
 } from './FinanceIcons';
 import InvoicesTab from './tabs/InvoicesTab';
 import TaxesFeesTab from './tabs/TaxesFeesTab';
@@ -15,7 +15,7 @@ import SettingsModal from '../../components/SettingsModal';
 export default function Finance({ onNavigate }) {
     const { width } = useWindowDimensions();
     const isTablet = width >= 768;
-    
+
     const [activeTab, setActiveTab] = useState('invoice'); // invoice | tax
     const [isTabModalOpen, setIsTabModalOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -111,7 +111,7 @@ export default function Finance({ onNavigate }) {
                         <View style={{ position: 'absolute', top: '40%', right: '5%' }}><TeapotIcon size={180} opacity={0.05} /></View>
                         <View style={{ position: 'absolute', bottom: 100, right: '25%' }}><PearlIcon size={60} opacity={0.08} /></View>
                         <View style={{ position: 'absolute', top: 150, left: '50%' }}><PearlIcon size={40} opacity={0.05} /></View>
-                        
+
                         {/* Glass Bubbles */}
                         <View style={{ position: 'absolute', width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(139, 163, 103, 0.03)', top: -100, left: '20%' }} />
                         <View style={{ position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(252, 211, 77, 0.02)', bottom: 50, right: '15%' }} />

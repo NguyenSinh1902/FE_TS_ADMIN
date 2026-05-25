@@ -281,7 +281,7 @@ const CustomersTab = ({ onModalStateChange, showToast }) => {
                 </TouchableOpacity>
             )}
 
-            <Modal visible={showCustFilter} transparent animationType="fade">
+            <Modal visible={showCustFilter} transparent animationType="fade" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.filterOverlay} activeOpacity={1} onPress={() => setShowCustFilter(false)}>
                     <View style={[styles.filterPopupBox, { top: filterPos }]}>
                         <Text style={styles.filterGroupTitle}>Thứ tự thời gian</Text>
@@ -298,7 +298,7 @@ const CustomersTab = ({ onModalStateChange, showToast }) => {
             </Modal>
 
             {/* More Menu Modal */}
-            <Modal visible={!!actionMenuContext} transparent animationType="fade">
+            <Modal visible={!!actionMenuContext} transparent animationType="fade" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.anchorOverlay} activeOpacity={1} onPress={() => setActionMenuContext(null)}>
                     {actionMenuContext && (
                         <View style={[styles.anchorPopoverBox, { top: actionMenuContext.y }]}>
@@ -310,7 +310,7 @@ const CustomersTab = ({ onModalStateChange, showToast }) => {
             </Modal>
 
             {/* Detail Modal */}
-            <Modal visible={!!selectedDetail} transparent animationType="fade">
+            <Modal visible={!!selectedDetail} transparent animationType="fade" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.detailModalOverlay} activeOpacity={1} onPress={() => setSelectedDetail(null)}>
                     <TouchableOpacity activeOpacity={1} style={styles.detailCardBox}>
                         {selectedDetail && (

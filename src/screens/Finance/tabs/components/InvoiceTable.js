@@ -94,7 +94,6 @@ const TableRow = ({ inv, onPress, isEven }) => {
             <Text style={[tbs.cell, tbs.cellKH]} numberOfLines={1}>
                 {inv.tenKhachHang || 'Vãng lai'}
             </Text>
-            <View style={{ flex: 1 }} />
             <Text style={[tbs.cell, tbs.cellTotal]}>
                 {(inv.tongThanhToan || 0).toLocaleString()}đ
             </Text>
@@ -291,7 +290,6 @@ const InvoiceTable = ({ onModalStateChange }) => {
                         <Text style={[tbs.th, tbs.cellTime]}>Thanh toán</Text>
                         <Text style={[tbs.th, tbs.cellBan]}>Bàn</Text>
                         <Text style={[tbs.th, tbs.cellKH]}>Khách hàng</Text>
-                        <View style={{ flex: 1 }} />
                         <Text style={[tbs.th, tbs.cellTotal]}>Tổng TT</Text>
                         <Text style={[tbs.th, tbs.cellPTTT]}>PTTT</Text>
                         <Text style={[tbs.th, tbs.cellStatus, { textAlign: 'right' }]}>Trạng thái</Text>
@@ -442,14 +440,14 @@ const tbs = StyleSheet.create({
     rowEven: { backgroundColor: '#FAFAFA' },
     cell: { fontSize: 13, color: '#334155', fontWeight: '600' },
 
-    // Column widths
-    cellId: { width: 70 },
-    cellTime: { width: 100 },
-    cellBan: { width: 150, paddingRight: 10 },
-    cellKH: { width: 120, paddingRight: 10 },
-    cellTotal: { width: 140, textAlign: 'right', fontWeight: '800', color: '#1E293B', fontSize: 14, paddingRight: 15 },
-    cellPTTT: { width: 120, textAlign: 'center' },
-    cellStatus: { width: 120, alignItems: 'flex-end', justifyContent: 'center' },
+    // Column widths — all flex-based for even distribution
+    cellId:     { flex: 0.6, paddingRight: 4 },
+    cellTime:   { flex: 0.9, paddingRight: 4 },
+    cellBan:    { flex: 1.2, paddingRight: 4 },
+    cellKH:     { flex: 1.2, paddingRight: 4 },
+    cellTotal:  { flex: 1.0, textAlign: 'right', fontWeight: '800', color: '#1E293B', fontSize: 14, paddingRight: 8 },
+    cellPTTT:   { flex: 0.9, textAlign: 'center' },
+    cellStatus: { flex: 1.0, alignItems: 'flex-end', justifyContent: 'center' },
 
     statusPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },
     statusPillText: { fontSize: 10, fontWeight: '800' },

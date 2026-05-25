@@ -45,11 +45,11 @@ export default function Facility({ onNavigate }) {
     const content = (
         <View style={isTablet ? styles.tabletMain : { flex: 1 }}>
             {!isTablet && <Header userName="Anna Trần" title="Cơ sở & Sơ đồ bàn" onNotificationPress={() => setShowNotiModal(true)} />}
-            
+
             {isTablet && (
                 <View style={styles.tabletHeader}>
                     <Text style={styles.tabletHeaderTitle}>Cơ sở vật chất</Text>
-                    
+
                     {/* Tablet Tab Switcher inline with header */}
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <View style={[styles.tabRow, styles.tabletTabRow, { marginVertical: 0 }]}>
@@ -115,7 +115,7 @@ export default function Facility({ onNavigate }) {
         return (
             <View style={styles.tabletContainer}>
                 <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
-                
+
                 {/* Clean Light Grey Background with Subtle Bubbles */}
                 <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#F8FAFC' }]}>
                     <View style={{ position: 'absolute', width: 300, height: 300, borderRadius: 150, backgroundColor: '#8BA367', opacity: 0.05, top: -50, right: -50 }} />

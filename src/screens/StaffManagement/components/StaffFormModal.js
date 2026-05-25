@@ -139,7 +139,7 @@ const StaffFormModal = ({ visible, onClose, staff, onSaveSuccess }) => {
     };
 
     return (
-        <Modal visible={visible} transparent animationType="fade">
+        <Modal visible={visible} transparent animationType="fade" statusBarTranslucent={true}>
             <View style={[styles.overlay, isTablet && styles.overlayCenter]}>
                 <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
                 <View style={[styles.modalBox, isTablet && styles.modalBoxTablet]}>

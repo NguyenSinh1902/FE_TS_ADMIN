@@ -4,7 +4,10 @@ import Svg, { Circle, Rect, Path } from 'react-native-svg';
 import LinearGradient from 'react-native-linear-gradient';
 import styles from '../../Facility.styles';
 import promotionApi from '../../../../api/promotionApi';
-import { RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { RefreshControl, ActivityIndicator } from 'react-native';
+import { useNotifications } from '../../../../context/NotificationContext';
+import ConfirmModal from '../../../../components/ConfirmModal';
+import DatePicker from 'react-native-date-picker';
 
 // --- ICONS (Promotions Specific) ---
 const ClockIcon = ({ color = "white", stroke = "white" }) => (
@@ -127,6 +130,7 @@ export default function PromotionsTab({ setIsAnyModalOpen }) {
     const [localPromos, setLocalPromos] = useState([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const { showToast } = useNotifications();
     
     const [promoSearchQuery, setPromoSearchQuery] = useState('');
     const [promoFilterType, setPromoFilterType] = useState('ALL');
@@ -141,6 +145,27 @@ export default function PromotionsTab({ setIsAnyModalOpen }) {
     const [isEditMode, setIsEditMode] = useState(false);
     const [actionMenu, setActionMenu] = useState(null);
     const [showFilter, setShowFilter] = useState(false);
+    const [confirmAction, setConfirmAction] = useState(null);
+    const [openStartPicker, setOpenStartPicker] = useState(false);
+    const [openEndPicker, setOpenEndPicker] = useState(false);
+
+    const formatDate = (date) => {
+        const d = new Date(date);
+        let month = '' + (d.getMonth() + 1);
+        let day = '' + d.getDate();
+        const year = d.getFullYear();
+
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+
+        return [year, month, day].join('-');
+    };
+
+    const getValidDate = (dateStr) => {
+        if (!dateStr) return new Date();
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? new Date() : d;
+    };
 
     const fetchPromos = async () => {
         try {
@@ -178,11 +203,10 @@ export default function PromotionsTab({ setIsAnyModalOpen }) {
     }, [isLocalModalOpen]);
 
     const onOpenAddPromo = () => {
-        const now = new Date().toISOString().split('T')[0];
         setPromoFormData({ 
             idKhuyenMai: null, maCode: '', loaiKhuyenMai: 'GIAM_TIEN_MAT', 
-            giaTriGiam: '', donToiThieu: '', ngayBatDau: now + 'T00:00:00', 
-            ngayHetHan: now + 'T23:59:59', laGiamGiaSauThue: false 
+            giaTriGiam: '', donToiThieu: '', ngayBatDau: '2026-03-01T00:00:00', 
+            ngayHetHan: '2026-12-31T23:59:59', laGiamGiaSauThue: false 
         });
         setIsEditMode(false);
         setShowPromoForm(true);
@@ -210,42 +234,41 @@ export default function PromotionsTab({ setIsAnyModalOpen }) {
             setLoading(true);
             if (isEditMode) {
                 await promotionApi.update(promoFormData.idKhuyenMai, payload);
-                Alert.alert('Thành công', 'Đã cập nhật khuyến mãi');
+                showToast('Thành công', 'Đã cập nhật khuyến mãi', 'success');
             } else {
                 await promotionApi.create(payload);
-                Alert.alert('Thành công', 'Đã thêm khuyến mãi mới');
+                showToast('Thành công', 'Đã thêm khuyến mãi mới', 'success');
             }
             setShowPromoForm(false);
             fetchPromos();
         } catch (error) {
-            Alert.alert('Lỗi', 'Không thể lưu khuyến mãi');
+            showToast('Lỗi', 'Không thể lưu khuyến mãi', 'error');
         } finally {
             setLoading(false);
         }
     };
 
     const handleDeletePromo = (id) => {
-        Alert.alert('Xác nhận', 'Bạn có chắc muốn xóa khuyến mãi này?', [
-            { text: 'Hủy' },
-            { 
-                text: 'Xóa', 
-                style: 'destructive',
-                onPress: async () => {
+        setActionMenu(null);
+        setTimeout(() => {
+            setConfirmAction({
+                message: 'Bạn có chắc muốn xóa khuyến mãi này?',
+                onConfirm: async () => {
                     try {
                         await promotionApi.delete(id);
-                        setActionMenu(null);
                         fetchPromos();
+                        showToast('Thành công', 'Đã xóa khuyến mãi', 'success');
                     } catch (error) {
-                        Alert.alert('Lỗi', 'Không thể xóa khuyến mãi');
+                        showToast('Lỗi', 'Không thể xóa khuyến mãi', 'error');
                     }
                 }
-            }
-        ]);
+            });
+        }, 150);
     };
 
     const togglePromoStatus = (id) => {
         // Feature not supported directly by API yet (no PATCH status)
-        Alert.alert('Thông báo', 'Tính năng tạm dừng sẽ sớm được cập nhật. Bạn có thể thay đổi ngày hết hạn để điều chỉnh trạng thái.');
+        showToast('Thông báo', 'Tính năng tạm dừng sẽ sớm được cập nhật. Bạn có thể thay đổi ngày hết hạn để điều chỉnh trạng thái.', 'cancel');
     };
 
     const filteredPromos = localPromos.filter(p => {
@@ -387,7 +410,7 @@ export default function PromotionsTab({ setIsAnyModalOpen }) {
             </ScrollView>
 
             {/* Modal: Action Popover */}
-            <Modal visible={!!actionMenu} transparent animationType="fade">
+            <Modal visible={!!actionMenu} transparent animationType="fade" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.anchorOverlay} activeOpacity={1} onPress={() => setActionMenu(null)}>
                     {actionMenu && (
                         <View style={[styles.anchorBox, { top: actionMenu.y, left: actionMenu.x }]}>
@@ -408,7 +431,7 @@ export default function PromotionsTab({ setIsAnyModalOpen }) {
             </Modal>
 
             {/* Modal: Filter */}
-            <Modal visible={showFilter} transparent animationType="fade">
+            <Modal visible={showFilter} transparent animationType="fade" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.filterOverlay} activeOpacity={1} onPress={() => setShowFilter(false)}>
                     <View style={[styles.filterPopupBox, { top: Platform.OS === 'ios' ? 240 : 220 }]}>
                         <Text style={styles.filterGroupTitle}>Loại giảm giá</Text>
@@ -425,7 +448,7 @@ export default function PromotionsTab({ setIsAnyModalOpen }) {
             </Modal>
 
             {/* Modal: Promo Form */}
-            <Modal visible={showPromoForm} transparent animationType="slide">
+            <Modal visible={showPromoForm} transparent animationType="slide" statusBarTranslucent={true}>
                 <View style={styles.detailOverlay}>
                     <View style={[styles.formCard, isTablet && { width: '60%', maxWidth: 700, alignSelf: 'center', padding: 0, borderRadius: 32, overflow: 'hidden' }]}>
                         <View style={{ backgroundColor: '#F8FAFC', padding: 24, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
@@ -508,21 +531,34 @@ export default function PromotionsTab({ setIsAnyModalOpen }) {
                                 </View>
                             </View>
 
-                            <View style={{ flexDirection: 'row', gap: 20, marginBottom: 10 }}>
+                            <View style={{ flexDirection: 'row', gap: 20, marginBottom: 15 }}>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.inputTitle}>Hạn sử dụng</Text>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 16, height: 52, paddingHorizontal: 16 }}>
-                                        <TextInput
-                                            style={{ flex: 1, height: 52, fontSize: 16, fontWeight: '600', color: '#1E2939' }}
-                                            placeholder="2026-12-31"
-                                            placeholderTextColor="#CBD5E1"
-                                            value={promoFormData.ngayHetHan}
-                                            onChangeText={(val) => setPromoFormData({ ...promoFormData, ngayHetHan: val })}
-                                        />
-                                    </View>
+                                    <Text style={styles.inputTitle}>Ngày bắt đầu</Text>
+                                    <TouchableOpacity 
+                                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 16, height: 52, paddingHorizontal: 16 }}
+                                        onPress={() => setOpenStartPicker(true)}
+                                    >
+                                        <Text style={{ fontSize: 16, fontWeight: '600', color: '#1E2939', flex: 1 }}>
+                                            {promoFormData.ngayBatDau ? promoFormData.ngayBatDau.split('T')[0] : 'Chọn ngày'}
+                                        </Text>
+                                    </TouchableOpacity>
                                 </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.inputTitle}>Ngày hết hạn</Text>
+                                    <TouchableOpacity 
+                                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 16, height: 52, paddingHorizontal: 16 }}
+                                        onPress={() => setOpenEndPicker(true)}
+                                    >
+                                        <Text style={{ fontSize: 16, fontWeight: '600', color: '#1E2939', flex: 1 }}>
+                                            {promoFormData.ngayHetHan ? promoFormData.ngayHetHan.split('T')[0] : 'Chọn ngày'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+
+                            <View style={{ marginBottom: 10 }}>
                                 <TouchableOpacity 
-                                    style={{ flex: 1, backgroundColor: '#F8FAFC', borderRadius: 16, padding: 12, marginTop: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#F1F5F9' }} 
+                                    style={{ backgroundColor: '#F8FAFC', borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#F1F5F9' }} 
                                     activeOpacity={0.8} 
                                     onPress={() => setPromoFormData({ ...promoFormData, laGiamGiaSauThue: !promoFormData.laGiamGiaSauThue })}
                                 >
@@ -549,7 +585,7 @@ export default function PromotionsTab({ setIsAnyModalOpen }) {
             </Modal>
 
             {/* Modal: Promo Detail */}
-            <Modal visible={!!selectedPromo} transparent animationType="fade">
+            <Modal visible={!!selectedPromo} transparent animationType="fade" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.detailOverlay} activeOpacity={1} onPress={() => setSelectedPromo(null)}>
                     <View style={[styles.formCard, isTablet && { width: '50%', maxWidth: 500, alignSelf: 'center', padding: 0, borderRadius: 32, overflow: 'hidden' }]}>
                         {selectedPromo && (
@@ -615,6 +651,51 @@ export default function PromotionsTab({ setIsAnyModalOpen }) {
                     <Text style={styles.fabText}>Thêm mã mới</Text>
                 </TouchableOpacity>
             )}
+
+            {/* Date Picker Modals */}
+            <DatePicker
+                modal
+                mode="date"
+                open={openStartPicker}
+                date={getValidDate(promoFormData.ngayBatDau)}
+                onConfirm={(date) => {
+                    setOpenStartPicker(false);
+                    setPromoFormData({ ...promoFormData, ngayBatDau: formatDate(date) + 'T00:00:00' });
+                }}
+                onCancel={() => setOpenStartPicker(false)}
+                title="Chọn ngày bắt đầu"
+                confirmText="Xác nhận"
+                cancelText="Hủy"
+                locale="vi"
+            />
+
+            <DatePicker
+                modal
+                mode="date"
+                open={openEndPicker}
+                date={getValidDate(promoFormData.ngayHetHan)}
+                onConfirm={(date) => {
+                    setOpenEndPicker(false);
+                    setPromoFormData({ ...promoFormData, ngayHetHan: formatDate(date) + 'T23:59:59' });
+                }}
+                onCancel={() => setOpenEndPicker(false)}
+                title="Chọn ngày hết hạn"
+                confirmText="Xác nhận"
+                cancelText="Hủy"
+                locale="vi"
+            />
+
+            {/* Confirm Modal */}
+            <ConfirmModal 
+                visible={!!confirmAction} 
+                title="Xác nhận xóa" 
+                message={confirmAction?.message || ''} 
+                onConfirm={() => {
+                    if (confirmAction?.onConfirm) confirmAction.onConfirm();
+                    setConfirmAction(null);
+                }} 
+                onCancel={() => setConfirmAction(null)} 
+            />
         </View>
     );
 }

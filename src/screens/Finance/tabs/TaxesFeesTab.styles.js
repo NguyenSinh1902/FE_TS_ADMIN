@@ -42,12 +42,18 @@ export default StyleSheet.create({
     defaultBadgeText: { fontSize: 9, fontWeight: '800', color: '#16A34A', textTransform: 'uppercase' },
     
     taxPopup: {
-        position: 'absolute', top: 35, right: 8, width: 100,
-        backgroundColor: '#FFFFFF', borderRadius: 10, borderWidth: 1, borderColor: '#F1F5F9',
-        shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, elevation: 10, zIndex: 100
+        position: 'absolute', width: 150,
+        backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15, shadowRadius: 10, elevation: 12, zIndex: 100,
+        paddingVertical: 4
     },
-    taxPopupItem: { paddingVertical: 8, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-    taxPopupText: { fontSize: 12, fontWeight: '600', color: '#475569' },
+    taxPopupItem: { 
+        paddingVertical: 12, paddingHorizontal: 16, 
+        borderBottomWidth: 1, borderBottomColor: '#F1F5F9',
+        flexDirection: 'row', alignItems: 'center'
+    },
+    taxPopupText: { fontSize: 14, fontWeight: '700', color: '#1E293B' },
 
     fabBtn: {
         position: 'absolute', right: 20, bottom: 100,

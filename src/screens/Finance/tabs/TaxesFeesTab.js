@@ -7,9 +7,22 @@ import {
     TeaLeafIcon, MatchaCupIcon, PearlIcon, TeapotIcon 
 } from '../FinanceIcons';
 import taxApi from '../../../api/taxApi';
-import { RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { RefreshControl, ActivityIndicator } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useNotifications } from '../../../context/NotificationContext';
+import ConfirmModal from '../../../components/ConfirmModal';
+
+const EditIcon = () => (
+    <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <Path d="M17 3C17.2626 2.73735 17.5744 2.52901 17.9176 2.38687C18.2608 2.24473 18.6286 2.17157 19 2.17157C19.3714 2.17157 19.7392 2.24473 20.0824 2.38687C20.4256 2.52901 20.7374 2.73735 21 3C21.2626 3.26264 21.471 3.57444 21.6131 3.9176C21.7553 4.26077 21.8284 4.62856 21.8284 5C21.8284 5.37143 21.7553 5.73923 21.6131 6.08239C21.471 6.42555 21.2626 6.73735 21 7L7.5 20.5L2 22L3.5 16.5L17 3Z" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);
+
+const TrashIcon = () => (
+    <Svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <Path d="M3 6H21M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+);
 
 const TaxesFeesTab = ({ onModalStateChange }) => {
     const { width } = useWindowDimensions();
@@ -17,15 +30,16 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
     const { showToast } = useNotifications();
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [activePopId, setActivePopId] = useState(null);
+    const [actionMenu, setActionMenu] = useState(null);
     const [selectedTax, setSelectedTax] = useState(null);
     const [showTaxModal, setShowTaxModal] = useState(false);
     const [showFilter, setShowFilter] = useState(false);
     const [filterType, setFilterType] = useState('ALL'); // ALL | DEFAULT | OPTIONAL
+    const [confirmAction, setConfirmAction] = useState(null);
 
     useEffect(() => {
-        onModalStateChange(showTaxModal || showFilter);
-    }, [showTaxModal, showFilter]);
+        onModalStateChange(showTaxModal || showFilter || !!actionMenu);
+    }, [showTaxModal, showFilter, actionMenu]);
 
     // Form states
     const [formTaxName, setFormTaxName] = useState('');
@@ -104,23 +118,21 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
     };
 
     const handleDeleteTax = (id) => {
-        Alert.alert('Xác nhận', 'Bạn có chắc muốn xóa thuế/phí này?', [
-            { text: 'Hủy' },
-            { 
-                text: 'Xóa', 
-                style: 'destructive',
-                onPress: async () => {
+        setActionMenu(null);
+        setTimeout(() => {
+            setConfirmAction({
+                message: 'Bạn có chắc muốn xóa thuế/phí này?',
+                onConfirm: async () => {
                     try {
                         await taxApi.delete(id);
-                        setActivePopId(null);
                         fetchTaxes();
                         showToast('Thành công', 'Đã xóa thuế/phí', 'success');
                     } catch (error) {
                         showToast('Lỗi', 'Không thể xóa thuế/phí', 'error');
                     }
                 }
-            }
-        ]);
+            });
+        }, 150);
     };
 
     const filteredTaxes = taxes.filter(t => {
@@ -240,15 +252,14 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
                 <View style={[tabletStyles.iconContainer, !item.laMacDinh && { backgroundColor: 'rgba(99, 102, 241, 0.08)' }]}>
                     <TaxIcon color={item.laMacDinh ? '#8BA367' : '#6366F1'} size={20} />
                 </View>
-                <TouchableOpacity onPress={() => setActivePopId(activePopId === item.idThuePhi ? null : item.idThuePhi)}>
+                <TouchableOpacity 
+                    onPress={(e) => {
+                        const { pageY, pageX } = e.nativeEvent;
+                        setActionMenu({ y: pageY - 20, x: pageX - 150, data: item });
+                    }}
+                >
                     <Text style={{ fontSize: 20, color: '#94A3B8', fontWeight: '900', padding: 4 }}>•••</Text>
                 </TouchableOpacity>
-                {activePopId === item.idThuePhi && (
-                    <View style={[styles.taxPopup, { top: 40, right: 0, borderWidth: 1, borderColor: '#F1F5F9', shadowOpacity: 0.1, borderRadius: 12 }]}>
-                        <TouchableOpacity style={styles.taxPopupItem} onPress={() => { openTaxModal(item); setActivePopId(null); }}><Text style={styles.taxPopupText}>Chỉnh sửa</Text></TouchableOpacity>
-                        <TouchableOpacity style={[styles.taxPopupItem, { borderBottomWidth: 0 }]} onPress={() => handleDeleteTax(item.idThuePhi)}><Text style={[styles.taxPopupText, { color: '#EF4444' }]}>Xóa</Text></TouchableOpacity>
-                    </View>
-                )}
             </View>
             
             <View style={{ flex: 1 }}>
@@ -390,7 +401,12 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
                                     <View style={[styles.taxIconCircle, { backgroundColor: tax.laMacDinh ? '#F0FDF4' : '#EEF2FF' }]}>
                                         <TaxIcon color={tax.laMacDinh ? '#8BA367' : '#6366F1'} />
                                     </View>
-                                    <TouchableOpacity onPress={() => setActivePopId(activePopId === tax.idThuePhi ? null : tax.idThuePhi)}>
+                                    <TouchableOpacity 
+                                        onPress={(e) => {
+                                            const { pageY, pageX } = e.nativeEvent;
+                                            setActionMenu({ y: pageY - 20, x: pageX - 150, data: tax });
+                                        }}
+                                    >
                                         <Text style={styles.threeDots}>•••</Text>
                                     </TouchableOpacity>
                                 </View>
@@ -409,12 +425,6 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
                                         <View style={styles.defaultBadge}><Text style={styles.defaultBadgeText}>Mặc định</Text></View>
                                     )}
                                 </View>
-                                {activePopId === tax.idThuePhi && (
-                                    <View style={styles.taxPopup}>
-                                        <TouchableOpacity style={styles.taxPopupItem} onPress={() => { openTaxModal(tax); setActivePopId(null); }}><Text style={styles.taxPopupText}>Chỉnh sửa</Text></TouchableOpacity>
-                                        <TouchableOpacity style={[styles.taxPopupItem, { borderBottomWidth: 0 }]} onPress={() => handleDeleteTax(tax.idThuePhi)}><Text style={[styles.taxPopupText, { color: '#EF4444' }]}>Xóa</Text></TouchableOpacity>
-                                    </View>
-                                )}
                             </View>
                         </View>
                     ))}
@@ -433,7 +443,7 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
         <View style={{ flex: 1 }}>
             {isTablet ? renderTabletView() : renderMobileView()}
 
-            <Modal visible={showTaxModal} transparent animationType="slide">
+            <Modal visible={showTaxModal} transparent animationType="slide" statusBarTranslucent={true}>
                 <View style={styles.modalOverlay}>
                     <View style={[styles.modalContent, { height: 'auto', paddingBottom: 40, width: isTablet ? 500 : '100%', alignSelf: isTablet ? 'center' : 'auto', borderRadius: isTablet ? 32 : 0, marginBottom: isTablet ? 'auto' : 0, marginTop: isTablet ? 'auto' : 0 }]}>
                         {!isTablet && <View style={styles.modalHandle} />}
@@ -475,7 +485,7 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
             </Modal>
 
             {/* Filter Modal */}
-            <Modal visible={showFilter} transparent animationType="fade">
+            <Modal visible={showFilter} transparent animationType="fade" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.filterOverlay} activeOpacity={1} onPress={() => setShowFilter(false)}>
                     <View style={[styles.filterPopupBox, { top: isTablet ? 160 : 120, right: isTablet ? 60 : 16, width: 220, borderWidth: 0 }]}>
                         <ScrollView showsVerticalScrollIndicator={false}>
@@ -494,6 +504,36 @@ const TaxesFeesTab = ({ onModalStateChange }) => {
                     </View>
                 </TouchableOpacity>
             </Modal>
+
+            {/* Action Popup */}
+            <Modal visible={!!actionMenu} transparent animationType="none" statusBarTranslucent={true}>
+                <TouchableOpacity style={styles.filterOverlay} activeOpacity={1} onPress={() => setActionMenu(null)}>
+                    {actionMenu && (
+                        <View style={[styles.taxPopup, { top: actionMenu.y, left: actionMenu.x, right: undefined }]}>
+                            <TouchableOpacity style={styles.taxPopupItem} onPress={() => { openTaxModal(actionMenu.data); setActionMenu(null); }}>
+                                <EditIcon />
+                                <Text style={[styles.taxPopupText, { marginLeft: 10 }]}>Chỉnh sửa</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.taxPopupItem, { borderBottomWidth: 0 }]} onPress={() => { handleDeleteTax(actionMenu.data.idThuePhi); setActionMenu(null); }}>
+                                <TrashIcon />
+                                <Text style={[styles.taxPopupText, { color: '#EF4444', marginLeft: 10 }]}>Xóa</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </TouchableOpacity>
+            </Modal>
+
+            {/* Confirm Modal */}
+            <ConfirmModal 
+                visible={!!confirmAction} 
+                title="Xác nhận xóa" 
+                message={confirmAction?.message || ''} 
+                onConfirm={() => {
+                    if (confirmAction?.onConfirm) confirmAction.onConfirm();
+                    setConfirmAction(null);
+                }} 
+                onCancel={() => setConfirmAction(null)} 
+            />
         </View>
     );
 };

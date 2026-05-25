@@ -3,17 +3,20 @@ import { StyleSheet } from 'react-native';
 const SidebarStyles = StyleSheet.create({
   tabletSidebar: {
     backgroundColor: 'rgba(27, 42, 21, 0.95)', // Dark Matcha Green
-    paddingTop: 50, 
+    paddingTop: 50,
     paddingBottom: 24,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     justifyContent: 'space-between',
     zIndex: 10,
     height: '100%',
     borderRightWidth: 1,
     borderRightColor: 'rgba(255, 255, 255, 0.1)',
+    // ⭐ Key: flex: undefined giống Cashier — tắt flex để animated width không bị flex system cản
+    flex: undefined,
+    overflow: 'hidden',
   },
   tabletSidebarCollapsed: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
   },
   sidebarHeader: {
     backgroundColor: 'rgba(255, 255, 255, 0.08)',

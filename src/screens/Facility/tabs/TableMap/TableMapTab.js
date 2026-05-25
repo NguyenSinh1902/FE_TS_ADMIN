@@ -6,8 +6,10 @@ import styles from '../../Facility.styles';
 import tableApi from '../../../../api/tableApi';
 import invoiceApi from '../../../../api/invoiceApi';
 import reservationApi from '../../../../api/reservationApi';
-import { RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { RefreshControl, ActivityIndicator } from 'react-native';
 import { useRealtime } from '../../../../context/RealtimeContext';
+import { useNotifications } from '../../../../context/NotificationContext';
+import ConfirmModal from '../../../../components/ConfirmModal';
 
 // --- ICONS (TableMap Specific) ---
 const ChairIcon = ({ color }) => (
@@ -148,6 +150,7 @@ const LiveTimer = ({ startTime, textStyle }) => {
 export default function TableMapTab({ setIsAnyModalOpen }) {
     const { width } = useWindowDimensions();
     const isTablet = width >= 768;
+    const { showToast } = useNotifications();
 
     // ─── Realtime Firebase ───────────────────────────────
     const { realtimeTables, realtimeOrders, lastTableUpdate } = useRealtime();
@@ -202,6 +205,7 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
     const [showFormModal, setShowFormModal] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [formData, setFormData] = useState({ id: null, tenBan: '', sucChua: '', tinhTrangBan: 'TRONG' });
+    const [confirmAction, setConfirmAction] = useState(null);
 
     const fetchAllData = async () => {
         try {
@@ -335,7 +339,7 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
     const handleSaveTable = async () => {
         try {
             if (!formData.tenBan || !formData.sucChua) {
-                Alert.alert('Lỗi', 'Vui lòng nhập tên bàn và sức chứa');
+                showToast('Lỗi', 'Vui lòng nhập tên bàn và sức chứa', 'error');
                 return;
             }
 
@@ -347,38 +351,36 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
 
             if (isEditMode) {
                 await tableApi.update(formData.id, payload);
-                Alert.alert('Thành công', 'Đã cập nhật thông tin bàn');
+                showToast('Thành công', 'Đã cập nhật thông tin bàn', 'success');
             } else {
                 await tableApi.create(payload);
-                Alert.alert('Thành công', 'Đã thêm bàn mới');
+                showToast('Thành công', 'Đã thêm bàn mới', 'success');
             }
             setShowFormModal(false);
             fetchAllData();
         } catch (error) {
             console.error('Save table error:', error);
-            Alert.alert('Lỗi', 'Có lỗi xảy ra khi lưu thông tin bàn');
+            showToast('Lỗi', 'Có lỗi xảy ra khi lưu thông tin bàn', 'error');
         }
     };
 
     const handleDeleteTable = (id) => {
-        Alert.alert('Xác nhận', 'Bạn có chắc chắn muốn xóa bàn này?', [
-            { text: 'Hủy', style: 'cancel', onPress: () => setActionMenu(null) },
-            { 
-                text: 'Xóa', 
-                style: 'destructive',
-                onPress: async () => {
+        setActionMenu(null);
+        setTimeout(() => {
+            setConfirmAction({
+                message: 'Bạn có chắc chắn muốn xóa bàn này?',
+                onConfirm: async () => {
                     try {
                         await tableApi.delete(id);
-                        Alert.alert('Thành công', 'Đã xóa bàn');
-                        setActionMenu(null);
+                        showToast('Thành công', 'Đã xóa bàn', 'success');
                         fetchAllData();
                     } catch (error) {
                         console.error('Delete table error:', error);
-                        Alert.alert('Lỗi', 'Có lỗi xảy ra khi xóa bàn');
+                        showToast('Lỗi', 'Có lỗi xảy ra khi xóa bàn', 'error');
                     }
                 }
-            }
-        ]);
+            });
+        }, 150);
     };
 
     // Tablet specific inline styles
@@ -701,7 +703,7 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
             )}
 
             {/* Modal: Table Detail */}
-            <Modal visible={!!selectedTable} transparent animationType="fade">
+            <Modal visible={!!selectedTable} transparent animationType="fade" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.detailOverlay} activeOpacity={1} onPress={() => setSelectedTable(null)}>
                     <TouchableOpacity activeOpacity={1} style={[styles.detailCard, isTablet && { width: '60%', maxWidth: 500, alignSelf: 'center', padding: 24, borderRadius: 24 }]}>
                         {selectedTable && (
@@ -776,7 +778,7 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
             </Modal>
 
             {/* Modal: Action Popover */}
-            <Modal visible={!!actionMenu} transparent animationType="fade">
+            <Modal visible={!!actionMenu} transparent animationType="fade" statusBarTranslucent={true}>
                 <TouchableOpacity style={styles.anchorOverlay} activeOpacity={1} onPress={() => setActionMenu(null)}>
                     {actionMenu && (
                         <View style={[styles.anchorBox, { top: actionMenu.y, left: actionMenu.x }]}>
@@ -812,7 +814,7 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
             </Modal>
 
             {/* Modal: Form */}
-            <Modal visible={showFormModal} transparent animationType="slide">
+            <Modal visible={showFormModal} transparent animationType="slide" statusBarTranslucent={true}>
                 <View style={styles.detailOverlay}>
                     <View style={[styles.formCard, isTablet && { width: '60%', maxWidth: 600, alignSelf: 'center', padding: 32, borderRadius: 28 }]}>
                         <View style={[styles.modalHeader, { marginBottom: 30 }]}>
@@ -863,6 +865,21 @@ export default function TableMapTab({ setIsAnyModalOpen }) {
                     </View>
                 </View>
             </Modal>
+
+            {/* Confirm Modal */}
+            <ConfirmModal 
+                visible={!!confirmAction} 
+                title="Xác nhận xóa" 
+                message={confirmAction?.message || ''} 
+                onConfirm={() => {
+                    if (confirmAction?.onConfirm) confirmAction.onConfirm();
+                    setConfirmAction(null);
+                }} 
+                onCancel={() => {
+                    if (confirmAction?.onCancel) confirmAction.onCancel();
+                    setConfirmAction(null);
+                }} 
+            />
         </View>
     );
 }

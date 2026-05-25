@@ -185,7 +185,7 @@ export default function PurchaseHistoryModal({ visible, onClose, customer }) {
   }, [visible, customer?.id]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent={true}>
       <View style={m.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
 

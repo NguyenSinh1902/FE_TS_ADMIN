@@ -193,7 +193,7 @@ export default function ProductFormModal({ visible, onClose, initialData, onSave
     };
 
     return (
-        <Modal visible={visible} transparent animationType={isTablet ? "fade" : "slide"}>
+        <Modal visible={visible} transparent animationType={isTablet ? "fade" : "slide"} statusBarTranslucent={true}>
             <View style={[styles.overlay, isTablet && styles.overlayTablet]}>
                 <View style={[styles.sheet, isTablet && styles.sheetTablet]}>
                     {!isTablet && <View style={styles.dragIndicator} />}

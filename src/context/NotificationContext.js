@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { DeviceEventEmitter, Animated, Dimensions, TouchableOpacity, Text, View, StyleSheet } from 'react-native';
+import safeAsyncStorage from '../utils/storage';
 
 const NotificationContext = createContext(null);
 
@@ -94,6 +95,21 @@ export function NotificationProvider({ children }) {
     const [toast, setToast] = useState(null);
     const toastKey = useRef(0);
 
+    // Tải thông báo từ AsyncStorage khi Provider mount
+    useEffect(() => {
+        const loadNotifications = async () => {
+            try {
+                const raw = await safeAsyncStorage.getItem('app_notifications');
+                if (raw) {
+                    setNotifications(JSON.parse(raw));
+                }
+            } catch (e) {
+                console.log('[Notification] Load error:', e);
+            }
+        };
+        loadNotifications();
+    }, []);
+
     useEffect(() => {
         const sub = DeviceEventEmitter.addListener('FCM_MESSAGE', (remoteMessage) => {
             const { notification, data } = remoteMessage;
@@ -102,15 +118,19 @@ export function NotificationProvider({ children }) {
 
             const isCancelled = title.includes('HỦY') || title.includes('🚨');
             const newNoti = {
-                id: String(++toastKey.current),
+                id: String(Date.now()),
                 title,
                 body,
-                time: new Date(),
+                time: new Date().toISOString(),
                 type: isCancelled ? 'cancel' : 'complete',
                 isNew: true,
             };
 
-            setNotifications(prev => [newNoti, ...prev].slice(0, 50)); // Giữ tối đa 50
+            setNotifications(prev => {
+                const updated = [newNoti, ...prev].slice(0, 50);
+                safeAsyncStorage.setItem('app_notifications', JSON.stringify(updated)).catch(e => console.log(e));
+                return updated;
+            });
             setToast(newNoti);
         });
 
@@ -118,7 +138,11 @@ export function NotificationProvider({ children }) {
     }, []);
 
     const markAllRead = () => {
-        setNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
+        setNotifications(prev => {
+            const updated = prev.map(n => ({ ...n, isNew: false }));
+            safeAsyncStorage.setItem('app_notifications', JSON.stringify(updated)).catch(e => console.log(e));
+            return updated;
+        });
     };
 
     const showToastMsg = (title, body, type = 'success') => {

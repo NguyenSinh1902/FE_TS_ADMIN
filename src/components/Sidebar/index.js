@@ -1,9 +1,16 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, Pressable, Animated, Image } from 'react-native';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Animated, Dimensions, Image } from 'react-native';
 import styles from './Sidebar.styles';
 import safeAsyncStorage from '../../utils/storage';
 import ProfileModal from './ProfileModal';
 import staffApi from '../../api/staffApi';
+
+// Dùng Dimensions.get (static, không subscribe event) thay vì useWindowDimensions
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// Pixel tuyệt đối — học từ Cashier (dùng 240/100px)
+// Manager dùng tỉ lệ thích ứng theo màn hình
+const SIDEBAR_EXPANDED_W = Math.round(SCREEN_WIDTH * 0.18);  // ~190px — gọn hơn (từ 20%)
+const SIDEBAR_COLLAPSED_W = Math.round(SCREEN_WIDTH * 0.055); // ~58px — nhỏ hơn (từ 7%)
 
 const Sidebar = ({
   activeTab,
@@ -13,33 +20,63 @@ const Sidebar = ({
 }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [isProfileVisible, setIsProfileVisible] = useState(false);
+  // Track collapse state nội bộ để start animation NGAY, không chờ prop cycle từ parent
+  const isCollapsedRef = useRef(isCollapsed);
+  // Track idNhanVien đã fetch để không gọi API avatar nhiều lần
+  const fetchedIdRef = useRef(null);
 
+  // Chỉ load user 1 lần khi mount
   useEffect(() => {
     loadUser();
-  }, [isProfileVisible]); // Reload user after profile is closed to get updates
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const loadUser = async () => {
+  const loadUser = useCallback(async () => {
     const userStr = await safeAsyncStorage.getItem('user');
-    if (userStr) {
-      const parsedUser = JSON.parse(userStr);
-      setCurrentUser(parsedUser);
+    if (!userStr) return;
+    const parsedUser = JSON.parse(userStr);
+    setCurrentUser(parsedUser);
 
-      // Fetch fresh data to ensure we have the Firebase avatar URL right after login
-      if (parsedUser.idNhanVien) {
-        try {
-          const freshData = await staffApi.getById(parsedUser.idNhanVien);
-          const freshAvatar = freshData?.hinhAnh || freshData?.avatar;
-          if (freshAvatar && freshAvatar !== parsedUser.hinhAnh && freshAvatar !== parsedUser.avatar) {
-            const updatedUser = { ...parsedUser, hinhAnh: freshAvatar, avatar: freshAvatar };
-            setCurrentUser(updatedUser);
-            await safeAsyncStorage.setItem('user', JSON.stringify(updatedUser));
-          }
-        } catch (error) {
-          // Silent fallback to cached data
+    // Track idNhanVien đã fetch để không gọi API lại khi re-render
+    const id = parsedUser.idNhanVien;
+    if (id && fetchedIdRef.current !== id) {
+      fetchedIdRef.current = id;
+      try {
+        const freshData = await staffApi.getById(id);
+        const freshAvatar = freshData?.hinhAnh || freshData?.avatar;
+        if (freshAvatar && freshAvatar !== parsedUser.hinhAnh && freshAvatar !== parsedUser.avatar) {
+          const updatedUser = { ...parsedUser, hinhAnh: freshAvatar, avatar: freshAvatar };
+          setCurrentUser(updatedUser);
+          await safeAsyncStorage.setItem('user', JSON.stringify(updatedUser));
         }
+      } catch (_) {
+        // Silent fallback to cached data
       }
     }
-  };
+  }, []);
+
+  // ─── Animation tự quản lý — KHÔNG phụ thuộc vào prop cycle ───────────────────
+  // Dùng pixel tuyệt đối thay vì '7%'/'20%' — tránh RN parse string mỗi frame
+  const animValue = useRef(new Animated.Value(isCollapsed ? SIDEBAR_COLLAPSED_W : SIDEBAR_EXPANDED_W)).current;
+
+  /**
+   * handleToggle: bắt đầu animation NGAY KHI BẤM, không chờ prop từ parent truyền về.
+   * Flow cũ: press → onToggleCollapse → setState(parent) → re-render → prop mới → useEffect → animate
+   * Flow mới: press → animate ngay → onToggleCollapse (parent cập nhật label visibility)
+   */
+  const handleToggle = useCallback(() => {
+    const nextCollapsed = !isCollapsedRef.current;
+    isCollapsedRef.current = nextCollapsed;
+    Animated.timing(animValue, {
+      toValue: nextCollapsed ? SIDEBAR_COLLAPSED_W : SIDEBAR_EXPANDED_W,
+      duration: 250,
+      useNativeDriver: false,
+    }).start();
+    // Notify parent để cập nhật label visibility (isCollapsed prop)
+    onToggleCollapse?.();
+  }, [animValue, onToggleCollapse]);
+
+  // Sidebar width = animValue (pixel) — không cần interpolate
+  const sidebarWidth = animValue;
 
   const handleLogout = async () => {
     setIsProfileVisible(false);
@@ -52,7 +89,11 @@ const Sidebar = ({
   const renderNavItem = (route, label, icon, navParams) => {
     const isActive = activeTab === route && (!navParams || activeTab === 'Dashboard');
     return (
-      <Pressable
+      // TouchableOpacity + delayPressIn={0}: phản hồi ngay khi chạm, không có delay như Pressable
+      <TouchableOpacity
+        key={route}
+        activeOpacity={0.7}
+        delayPressIn={0}
         style={[
           styles.tabletNavItem,
           isActive && !navParams && styles.tabletNavItemActive,
@@ -68,31 +109,20 @@ const Sidebar = ({
             {label}
           </Text>
         )}
-      </Pressable>
+      </TouchableOpacity>
     );
   };
 
-  const animValue = useRef(new Animated.Value(isCollapsed ? 0 : 1)).current;
-
-  useEffect(() => {
-    Animated.timing(animValue, {
-      toValue: isCollapsed ? 0 : 1,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  }, [isCollapsed]);
-
-  const sidebarWidth = animValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['7%', '20%'] // 7% when collapsed, 20% when expanded
-  });
+  // Bỏ useEffect([isCollapsed]) cũ — animation không còn chờ prop cycle nữa
 
   return (
-    <Animated.View style={[styles.tabletSidebar, { width: sidebarWidth }]}>
-      {/* 1. Header Card */}
-      <Pressable
+    <Animated.View style={[styles.tabletSidebar, { width: sidebarWidth, flex: undefined }]}>
+      {/* 1. Header Card — bấm để toggle sidebar */}
+      <TouchableOpacity
+        activeOpacity={0.8}
+        delayPressIn={0}
         style={[styles.sidebarHeader, isCollapsed && styles.sidebarHeaderCollapsed]}
-        onPress={onToggleCollapse}
+        onPress={handleToggle}
       >
         <View style={styles.brandGroup}>
           <View style={styles.brandLogo}><Text style={styles.brandLogoText}>🍃</Text></View>
@@ -103,7 +133,7 @@ const Sidebar = ({
             </View>
           )}
         </View>
-      </Pressable>
+      </TouchableOpacity>
 
       {/* 2. Main Navigation Card */}
       <View style={[styles.tabletNavContainer, isCollapsed && styles.tabletNavContainerCollapsed]}>
@@ -117,7 +147,9 @@ const Sidebar = ({
 
       {/* 3. Footer Profile Card */}
       <View style={[styles.sidebarFooter, isCollapsed && styles.sidebarFooterCollapsed]}>
-        <Pressable
+        <TouchableOpacity
+          activeOpacity={0.7}
+          delayPressIn={0}
           style={styles.userProfileGroup}
           onPress={() => setIsProfileVisible(true)}
         >
@@ -136,12 +168,18 @@ const Sidebar = ({
               <Text style={styles.userRole}>Nhân viên quản lý</Text>
             </View>
           )}
-        </Pressable>
+        </TouchableOpacity>
       </View>
 
       <ProfileModal
         visible={isProfileVisible}
-        onClose={() => setIsProfileVisible(false)}
+        onClose={() => {
+          setIsProfileVisible(false);
+          // Reload user data sau khi đóng modal (có thể đã đổi avatar)
+          // Reset fetchedIdRef để cho phép fetch lại
+          fetchedIdRef.current = null;
+          loadUser();
+        }}
         onLogout={handleLogout}
       />
     </Animated.View>
