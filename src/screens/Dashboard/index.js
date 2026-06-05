@@ -281,6 +281,13 @@ export default function Dashboard({ onNavigate, params }) {
       tuNgay = toYMD(startOfYear);
       const endOfYear = new Date(today.getFullYear(), 11, 31);
       denNgay = toYMD(endOfYear);
+    } else if (filter === 'quy') {
+      const month = today.getMonth(); // 0-indexed
+      const quarter = Math.floor(month / 3); // 0=Q1, 1=Q2, 2=Q3, 3=Q4
+      const startOfQuarter = new Date(today.getFullYear(), quarter * 3, 1);
+      const endOfQuarter = new Date(today.getFullYear(), quarter * 3 + 3, 0);
+      tuNgay = toYMD(startOfQuarter);
+      denNgay = toYMD(endOfQuarter);
     } else {
       const day = today.getDay();
       const diffToMonday = day === 0 ? 6 : day - 1;
@@ -525,6 +532,7 @@ export default function Dashboard({ onNavigate, params }) {
     if (timeFilter === 'ngay') return ' - Tuần này';
     if (timeFilter === 'tuan') return ` - Tháng ${today.getMonth() + 1}`;
     if (timeFilter === 'thang') return ` - Năm ${today.getFullYear()}`;
+    if (timeFilter === 'quy') { const q = Math.floor(today.getMonth() / 3) + 1; return ` - Quý ${q}/${today.getFullYear()}`; }
     if (timeFilter === 'custom') return ` - Từ ${formatDateDisplay(startDate)} đến ${formatDateDisplay(endDate)}`;
     return '';
   };
@@ -1128,6 +1136,9 @@ export default function Dashboard({ onNavigate, params }) {
                     <TouchableOpacity onPress={() => setTimeFilter('tuan')} style={[styles.segmentButton, timeFilter === 'tuan' && styles.segmentButtonActive]}>
                       <Text style={[styles.segmentText, timeFilter === 'tuan' && styles.segmentTextActive]}>Tháng này</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setTimeFilter('quy')} style={[styles.segmentButton, timeFilter === 'quy' && styles.segmentButtonActive]}>
+                      <Text style={[styles.segmentText, timeFilter === 'quy' && styles.segmentTextActive]}>Quý này</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => setTimeFilter('thang')} style={[styles.segmentButton, timeFilter === 'thang' && styles.segmentButtonActive]}>
                       <Text style={[styles.segmentText, timeFilter === 'thang' && styles.segmentTextActive]}>Năm nay</Text>
                     </TouchableOpacity>
@@ -1330,6 +1341,9 @@ export default function Dashboard({ onNavigate, params }) {
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => setTimeFilter('tuan')} style={[styles.segmentButton, timeFilter === 'tuan' && styles.segmentButtonActive]}>
                     <Text style={[styles.segmentText, { fontSize: 10 }, timeFilter === 'tuan' && styles.segmentTextActive]}>Tháng</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setTimeFilter('quy')} style={[styles.segmentButton, timeFilter === 'quy' && styles.segmentButtonActive]}>
+                    <Text style={[styles.segmentText, { fontSize: 10 }, timeFilter === 'quy' && styles.segmentTextActive]}>Quý</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => setTimeFilter('thang')} style={[styles.segmentButton, timeFilter === 'thang' && styles.segmentButtonActive]}>
                     <Text style={[styles.segmentText, { fontSize: 10 }, timeFilter === 'thang' && styles.segmentTextActive]}>Năm</Text>

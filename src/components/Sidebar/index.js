@@ -143,6 +143,7 @@ const Sidebar = ({
         {renderNavItem('Menu', 'Thực đơn', '🍵')}
         {renderNavItem('Facility', 'Cơ sở vật chất', '🏢')}
         {renderNavItem('Finance', 'Tài chính', '💰')}
+        {renderNavItem('Refunds', 'Duyệt hoàn đơn', '↩️')}
       </View>
 
       {/* 3. Footer Profile Card */}

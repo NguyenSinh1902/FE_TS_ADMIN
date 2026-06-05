@@ -35,6 +35,12 @@ const FinanceIcon = ({ color }) => (
   </Svg>
 );
 
+const RefundIcon = ({ color }) => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <Path d="M3 10H13C17.4183 10 21 13.5817 21 18V20M3 10L9 16M3 10L9 4" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
 export default function BottomNav({ currentScreen, onNavigate }) {
     const navItems = [
         { key: 'Dashboard', label: 'Dashboard', icon: DashboardIcon },
@@ -42,6 +48,7 @@ export default function BottomNav({ currentScreen, onNavigate }) {
         { key: 'StaffManagement', label: 'Nhân sự', icon: StaffIcon },
         { key: 'Facility', label: 'Cơ sở', icon: FacilityIcon },
         { key: 'Finance', label: 'Tài chính', icon: FinanceIcon },
+        { key: 'Refunds', label: 'Hoàn đơn', icon: RefundIcon },
     ];
 
     return (
@@ -97,7 +104,7 @@ const styles = StyleSheet.create({
     navItem: {
         alignItems: 'center',
         justifyContent: 'center',
-        width: width / 5.2,
+        width: width / 6.2,
     },
     iconWrapper: {
         width: 44,

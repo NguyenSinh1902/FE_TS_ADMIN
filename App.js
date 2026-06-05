@@ -25,6 +25,7 @@ import Finance from './src/screens/Finance';
 import AIHistory from './src/screens/AIHistory';
 import CategoryDetail from './src/screens/Menu/sub-screens/CategoryDetail';
 import ProductDetail from './src/screens/Menu/sub-screens/ProductDetail';
+import RefundApproval from './src/screens/RefundApproval';
 
 const Stack = createNativeStackNavigator();
 const TabStack = createNativeStackNavigator();
@@ -73,6 +74,7 @@ const MainAppTabs = ({ navigation, route }) => {
   const FacilityScreen = useRef(makeScreen(Facility)).current;
   const FinanceScreen = useRef(makeScreen(Finance)).current;
   const AIHistoryScreen = useRef(makeScreen(AIHistory)).current;
+  const RefundApprovalScreen = useRef(makeScreen(RefundApproval)).current;
 
   return (
     <View style={{ flex: 1, flexDirection: IS_TABLET ? 'row' : 'column', backgroundColor: '#F8FAFC' }}>
@@ -104,6 +106,7 @@ const MainAppTabs = ({ navigation, route }) => {
           <TabStack.Screen name="Facility" component={FacilityScreen} />
           <TabStack.Screen name="Finance" component={FinanceScreen} />
           <TabStack.Screen name="AIHistory" component={AIHistoryScreen} />
+          <TabStack.Screen name="Refunds" component={RefundApprovalScreen} />
         </TabStack.Navigator>
       </View>
       {!IS_TABLET && (
